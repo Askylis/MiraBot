@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34622.214
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeeraBot", "MeeraBot\MeeraBot.csproj", "{00BFE5FE-9139-4786-ADD6-8DE9FDD8B04A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiraBot", "MiraBot\MiraBot.csproj", "{00BFE5FE-9139-4786-ADD6-8DE9FDD8B04A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeeraBot.DataAccess", "MeeraBot.DataAccess\MeeraBot.DataAccess.csproj", "{42E88552-9D96-4ADD-89CE-B99471365AED}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiraBot.DataAccess", "MiraBot.DataAccess\MiraBot.DataAccess.csproj", "{42E88552-9D96-4ADD-89CE-B99471365AED}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiraBot.GroceryAssistance", "MiraBot.GroceryAssistant\MiraBot.GroceryAssistance.csproj", "{11CB3121-1C96-4A0B-9B2E-A0DDDFB21B66}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{42E88552-9D96-4ADD-89CE-B99471365AED}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{42E88552-9D96-4ADD-89CE-B99471365AED}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{42E88552-9D96-4ADD-89CE-B99471365AED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{11CB3121-1C96-4A0B-9B2E-A0DDDFB21B66}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{11CB3121-1C96-4A0B-9B2E-A0DDDFB21B66}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{11CB3121-1C96-4A0B-9B2E-A0DDDFB21B66}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{11CB3121-1C96-4A0B-9B2E-A0DDDFB21B66}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

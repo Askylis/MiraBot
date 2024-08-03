@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace MeeraBot.DataAccess;
+namespace MiraBot.DataAccess;
 
 public partial class User
 {

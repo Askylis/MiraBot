@@ -1,18 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
-namespace MeeraBot.DataAccess;
+namespace MiraBot.DataAccess;
 
-public partial class MeeraBotContext : DbContext
+public partial class MiraBotContext : DbContext
 {
-    private readonly string connectionString;
-    public MeeraBotContext(string connectionString)
+    private readonly string _connectionString;
+
+    public MiraBotContext(string connectionString)
     {
-        this.connectionString = connectionString;
+        _connectionString = connectionString;
     }
 
-    public MeeraBotContext(DbContextOptions<MeeraBotContext> options)
+    public MiraBotContext(DbContextOptions<MiraBotContext> options)
         : base(options)
     {
     }
@@ -29,7 +28,7 @@ public partial class MeeraBotContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer(this.connectionString);
+        => optionsBuilder.UseSqlServer(_connectionString);
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -44,7 +43,7 @@ public partial class MeeraBotContext : DbContext
 
             entity.HasOne(d => d.OwnerUserNameNavigation).WithMany(p => p.Ingredients)
                 .HasForeignKey(d => d.OwnerUserName)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK_Ingredients_Users");
         });
 
@@ -68,10 +67,10 @@ public partial class MeeraBotContext : DbContext
                     r => r.HasOne<Ingredient>().WithMany()
                         .HasForeignKey("IngredientId")
                         .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK_IngredientsInMeals_Ingredients"),
+                    .HasConstraintName("FK_IngredientsInMeals_Ingredients"),
                     l => l.HasOne<Meal>().WithMany()
                         .HasForeignKey("MealId")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .HasConstraintName("FK_IngredientsInMeals_IngredientsInMeals"),
                     j =>
                     {

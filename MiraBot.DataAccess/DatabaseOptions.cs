@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MeeraBot.DataAccess.Repositories
+namespace MiraBot.DataAccess
 {
-    internal class GroceryAssistantRepository
+    public sealed class DatabaseOptions
     {
-
+        public string? ConnectionString { get; set; }
     }
 }

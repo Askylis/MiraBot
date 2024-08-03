@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 
-namespace MeeraBot.Utility
+namespace MiraBot.Utility
 {
     public static class LogHelper
     {

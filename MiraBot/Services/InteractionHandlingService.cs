@@ -1,16 +1,13 @@
 ﻿using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using MeeraBot.Utility;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System;
+using MiraBot.Utility;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace MeeraBot.Services
+namespace MiraBot.Services
 {
     public class InteractionHandlingService : IHostedService
     {
