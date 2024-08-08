@@ -11,7 +11,6 @@ namespace MiraBot.Modules
         private readonly GroceryAssistant groceryAssistant;
         private readonly InteractiveService interactiveService;
         private readonly GroceryAssistantComponents components;
-        internal static int overrideValue = 0;
         internal static int modifyValue = 0;
         internal const int maxNameLength = 50;
         internal const int discordMsgLimit = 2000;
@@ -30,73 +29,42 @@ namespace MiraBot.Modules
         public async Task AddMealAsync()
         {
             await RespondAsync("What's the name of your new meal?");
-            string mealName = await CheckInvalidNameAsync(isIngredient: false);
+            string mealName = await GetValidNameAsync(isIngredient: false);
+            if (mealName is null)
+            {
+                return;
+            }
             var ingredients = await AddIngredientsAsync();
             await groceryAssistant.AddMealAsync(mealName, ingredients, Context.User.Username);
-            await ReplyAsync($"All done! Added \"{mealName}\" and its {ingredients.Count()} ingredients!");
+            await ReplyAsync($"All done! Added \"{mealName}\" and its {ingredients.Count} ingredients!");
         }
 
 
         [SlashCommand("deletemeal", "Lets you delete one of your saved meals.")]
         public async Task DeleteMealAsync()
         {
-            int modifySelection = 0;
+            int index = 0;
             await RespondAsync("One moment, please!");
             var meals = await groceryAssistant.GetAllMealsAsync(Context.User.Username);
 
-            if (meals.Count() < 1)
+            if (meals.Count < 1)
             {
                 await ReplyAsync("You don't have any meals to delete!");
                 return;
             }
-
-            var mealNames = new List<string>();
-            int newNumber = -1;
-
-            if (meals.Count() < selectMenuLimit)
+            while (index != -1)
             {
-                await ReplyAsync("If you want to delete any of your saved meals, select it now. Otherwise, select \"Nevermind\".");
-                foreach (var meal in meals)
+                index = await GetMealIndexAsync(meals,
+                "Choose which meal you'd like to delete.",
+                "delete-menu",
+                "Remove this meal from your saved meals.",
+          Context);
+                if (index == -1)
                 {
-                    mealNames.Add(meal.Name);
+                    break;
                 }
-
-                while (modifySelection > -1)
-                {
-                    await components.GenerateMenuAsync(mealNames,
-                        "Choose which meal you'd like to delete.",
-                        "delete-menu",
-                        "Remove this meal from your saved meals.",
-                        Context);
-                    modifySelection = modifyValue;
-                    modifyValue = 0;
-                    if (modifySelection >= 0)
-                    {
-                        await ReplyAsync($"All right, I deleted \"{mealNames[modifySelection]}\" for you! Do you need to delete anything else?");
-                        await groceryAssistant.DeleteMealAsync(mealNames[modifySelection], Context.User.Username);
-                        mealNames.RemoveAt(modifySelection);
-                    }
-                }
-            }
-            else
-            {
-                await ReplyAsync("Type out the number associated with the meal you'd like to delete! Type \"0\" if you don't want to delete anything.");
-                await SendLongMessageAsync(meals: meals);
-
-                while (newNumber < 0)
-                {
-                    newNumber = await GetValidNumberAsync(0, meals.Count());
-                }
-                if (newNumber > 0)
-                {
-                    await ReplyAsync($"All done! Deleted {meals[newNumber - 1].Name}!");
-                    await groceryAssistant.DeleteMealAsync(meals[newNumber - 1].Name, Context.User.Username);
-                }
-                if (newNumber == 0)
-                {
-                    await ReplyAsync("Okay, I'll be here if you need me for anything else!");
-                }
-
+                await groceryAssistant.DeleteMealAsync(meals[index].MealId, Context.User.Username);
+                meals.RemoveAt(index);
             }
         }
 
@@ -104,101 +72,74 @@ namespace MiraBot.Modules
         [SlashCommand("editmeal", "Lets you edit one of your saved meals.")]
         public async Task EditMealAsync()
         {
-            int modifySelection = 1;
-            int selectionValue = 1;
+            int index = 0;
+            int selection = 0;
             await RespondAsync("One moment, please!");
             var meals = await groceryAssistant.GetAllMealsAsync(Context.User.Username);
-            var mealsCount = meals.Count();
-            if (mealsCount == 0)
+
+            if (meals.Count < 0)
             {
                 await ReplyAsync("Sorry, doesn't look like you have any saved meals! Add some meals and get back to me! :)");
                 return;
             }
-            var mealNames = meals.Select(meal => meal.Name).ToList();
-            Meal selectedMeal = new();
-            string selectedMealName = "";
 
-            if (mealsCount <= selectMenuLimit)
+            index = await GetMealIndexAsync(meals,
+            "Choose which meal you'd like to edit.",
+            "edit-menu",
+            "Modify this meal",
+      Context);
+
+            if (index == -1)
             {
-                await components.GenerateMenuAsync(
-                mealNames,
-                "Choose which meal you'd like to edit.",
-                "edit-menu",
-                "Edit this meal.",
-                Context);
-                //I KNOW THAT USING STATIC FIELDS LIKE THIS IS WRONG AND UGLY AND BAD
-                //BUT I HAVE NO IDEA HOW ELSE TO GET THE VALUES I NEED FROM THE MENU HANDLERS
-                //DON'T YELL AT ME :(
-                //I was gonna ask for help with finding a better solution
-                modifySelection = modifyValue;
-                modifyValue = 0;
+                return;
             }
 
-            else
-            {
-                await SendLongMessageAsync(meals: meals, sendIngredients: false);
-                await ReplyAsync("Type in the number associated with the meal you'd like to update. Otherwise, type \"0\".");
-                int selection = await GetValidNumberAsync(0, meals.Count());
-                if (selection == 0)
-                {
-                    await ReplyAsync("Sure, no problem!");
-                    return;
-                }
-                modifySelection = selection -1;
-            }
-
-            if (modifySelection >= 0)
-            {
-                selectedMealName = meals[modifySelection].Name;
-                await ReplyAsync($"You selected {selectedMealName}!");
-                selectedMeal = meals[modifySelection];
-                var menuOptions = new List<string>
+            var options = new List<string>
                     {
                         "Edit meal name.",
                         "Edit ingredients.",
                         "Edit both."
                     };
-
-                await components.GenerateMenuAsync(
-                    menuOptions,
-                    "Choose what you'd like to edit.",
-                    "edit-menu",
-                    optionDescription: null,
-                    Context);
-
-                selectionValue = modifyValue;
-                modifyValue = 0;
-            }
-            else
-            {
-                await ReplyAsync("Okay, no problem!");
-                return;
-            }
-
+            await ReplyAsync("Do you want to edit the name, ingredients, or both?");
+            await components.GenerateMenuAsync(options,
+                "Choose what to edit.",
+                "edit-menu",
+                null,
+                Context
+                );
+            selection = modifyValue;
+            modifyValue = 0;
+            Meal selectedMeal = meals[index];
             string mealName = "";
-            List<string> ingNames = new();
-            var ingredients = string.Join(", ", meals[modifySelection].Ingredients.Select(i => i.Name));
-            switch (selectionValue)
+            var ingredients = string.Join(", ", meals[index].Ingredients.Select(i => i.Name));
+            List<string> ingNames;
+            switch (selection)
             {
+                case -1:
+                    return;
                 case 0:
-                    await ReplyAsync("Sure! What's the new name for this meal?");
-                    mealName = await CheckInvalidNameAsync(false);
+                    await ReplyAsync($"Sure! What's the new name for {selectedMeal.Name}?");
+                    mealName = await GetValidNameAsync(false);
+                    if (mealName is null)
+                        return;
                     ingNames = selectedMeal.Ingredients.Select(i => i.Name).ToList();
-                    await groceryAssistant.DeleteMealAsync(selectedMealName, Context.User.Username);
+                    await groceryAssistant.DeleteMealAsync(selectedMeal.MealId, Context.User.Username);
                     await groceryAssistant.AddMealAsync(mealName, ingNames, Context.User.Username, selectedMeal.Date);
                     break;
                 case 1:
                     await ReplyAsync($"This meal's current ingredients are: {ingredients}");
                     ingNames = await AddIngredientsAsync();
-                    await groceryAssistant.DeleteMealAsync(selectedMealName, Context.User.Username);
-                    await groceryAssistant.AddMealAsync(selectedMealName, ingNames, Context.User.Username, selectedMeal.Date);
+                    await groceryAssistant.DeleteMealAsync(selectedMeal.MealId, Context.User.Username);
+                    await groceryAssistant.AddMealAsync(selectedMeal.Name, ingNames, Context.User.Username, selectedMeal.Date);
                     break;
                 case 2:
-                    await ReplyAsync("All right, what's the new name for this meal?");
-                    mealName = await CheckInvalidNameAsync(false);
+                    await ReplyAsync($"All right, what's the new name for {selectedMeal.Name}?");
+                    mealName = await GetValidNameAsync(false);
+                    if (mealName is null)
+                        return;
                     await ReplyAsync($"This meal's current ingredients are: {ingredients}");
                     ingNames = await AddIngredientsAsync();
-                    await groceryAssistant.DeleteMealAsync(selectedMealName, Context.User.Username);
+                    await groceryAssistant.DeleteMealAsync(selectedMeal.MealId, Context.User.Username);
                     await groceryAssistant.AddMealAsync(mealName, ingNames, Context.User.Username, selectedMeal.Date);
                     break;
                 default:
@@ -222,8 +163,7 @@ namespace MiraBot.Modules
             }
 
             await ReplyAsync("Here's all your meals! \n");
-            //fix this if statement to instead check for message length, rather than number of meals
-            if (meals.Count() > 20) 
+            if (meals.Count > 20)
             {
                 await SendListFileAsync(meals);
             }
@@ -237,12 +177,11 @@ namespace MiraBot.Modules
         [SlashCommand("ga", "Generates a new list of grocery ideas.")]
         public async Task GenerateMealsListAsync()
         {
-            var allMeals = await groceryAssistant.GetAllMealsAsync(Context.User.Username);
-            var mealCount = allMeals.Count();
+            var meals = await groceryAssistant.GetAllMealsAsync(Context.User.Username);
+            var mealCount = meals.Count;
             await RespondAsync($"Okay, tell me how many meals you want! You have {mealCount} total meals. You can also select \"0\" to cancel this command.");
             int numberOfMeals = await GetValidNumberAsync(0, mealCount);
-            int overrideSelection = 0;
-            int overrideChoice = -1;
+            int index = 0;
 
             if (numberOfMeals == 0)
             {
@@ -251,65 +190,34 @@ namespace MiraBot.Modules
             }
 
             var selectedMeals = await groceryAssistant.GenerateMealIdeasAsync(numberOfMeals, Context.User.Username);
-
             await FollowupAsync("Here's what we have so far! \n");
             await SendLongMessageAsync(meals: selectedMeals, sendIngredients: true);
 
-            while (overrideSelection > -1 && numberOfMeals < mealCount && numberOfMeals <= (selectMenuLimit))
+            while (numberOfMeals < mealCount && index > -1)
             {
-                await ReplyAsync("If you want to replace any of these meals, select it now. Otherwise, select \"No override\".");
-                await components.GenerateMenuAsync(selectedMeals,
+                index = await GetMealIndexAsync(selectedMeals,
                     "Choose override preference",
                     "override-menu",
                     "Remove this meal from your selected meals.",
-                    Context,
-                    "No override",
-                    "Proceed with your currently selected meals.");
-
-                overrideSelection = overrideValue;
-                overrideValue = 0;
-                if (overrideSelection >= 0)
+                    Context);
+                if (index >= 0)
                 {
-                    string removedMeal = selectedMeals[overrideSelection].Name;
-                    var newMeals = await groceryAssistant.ReplaceMealAsync(selectedMeals, overrideSelection, Context.User.Username);
+                    string removedMeal = selectedMeals[index].Name;
+                    var newMeals = await groceryAssistant.ReplaceMealAsync(selectedMeals, index, Context.User.Username);
                     await ReplyAsync($"Removed **{removedMeal}** and added **{newMeals.Last().Name}**! Here's your updated meals list!\n");
                     await SendLongMessageAsync(meals: newMeals, sendIngredients: true);
                     selectedMeals = newMeals;
                 }
             }
-
-            while (numberOfMeals < mealCount && numberOfMeals >= selectMenuLimit)
-            {
-                await ReplyAsync("If you want to replace any of these meals, type the number associated with it. Otherwise, type \"0\".");
-                overrideChoice = await GetValidNumberAsync(0, selectedMeals.Count());
-
-                if (overrideChoice == 0)
-                {
-                    await ReplyAsync("Okay, no problem! I'll be here if you need me!");
-                    return;
-                }
-
-                string removedMeal = selectedMeals[overrideChoice - 1].Name;
-                var newMeals = await groceryAssistant.ReplaceMealAsync(selectedMeals, overrideChoice - 1, Context.User.Username);
-                await ReplyAsync($"Removed **{removedMeal}** and added **{newMeals.Last().Name}**! Here's your updated meals list!\n");
-                await SendLongMessageAsync(meals: newMeals);
-                selectedMeals = newMeals;
-            }
             await ReplyAsync("Here you go!");
             await SendSelectionFileAsync(selectedMeals);
             var dateNow = DateOnly.FromDateTime(DateTime.Now);
-            //I was doing lots of reading on async code and tasks, trying to understand the ins and outs of it properly
-            //so I can use it as efficiently as possible. Microsoft's documentation for async code said that if you have a bunch of tasks that
-            //need to be ran at the same time, to handle them this way instead of awaiting each one sequentially. idk if I did this right,
-            //but you can yell at me if I did a dumb :)
             var updates = new List<Task>();
-            List<string> ingredients = new();
             foreach (var meal in selectedMeals)
             {
-                ingredients = meal.Ingredients.Select(i => i.Name).ToList();
-                updates.Add(groceryAssistant.DeleteMealAsync(meal.Name, Context.User.Username));
+                List<string> ingredients = meal.Ingredients.Select(i => i.Name).ToList();
+                updates.Add(groceryAssistant.DeleteMealAsync(meal.MealId, Context.User.Username));
                 updates.Add(groceryAssistant.AddMealAsync(meal.Name, ingredients, Context.User.Username, dateNow));
-                ingredients.Clear();
             }
             await Task.WhenAll(updates);
         }
@@ -353,18 +261,18 @@ namespace MiraBot.Modules
             }
 
             var meals = await groceryAssistant.ConvertMealsFileAsync(mealsText, Context.User.Username);
-            if (meals.Count() == 0)
+            if (meals.Count == 0)
             {
                 await ReplyAsync("Sorry, it doesn't look like there's any valid meals in here!");
             }
             else
             {
-                await ReplyAsync($"All right, all done! Converted and saved all {meals.Count()} meals!");
+                await ReplyAsync($"All right, all done! Converted and saved all {meals.Count} meals!");
             }
         }
 
 
-        public async Task SendLongMessageAsync(List<string> input = null, List<Meal> meals = null, bool sendIngredients = false)
+        public async Task SendLongMessageAsync(List<string>? input = null, List<Meal>? meals = null, bool sendIngredients = false)
         {
             var sentMessage = groceryAssistant.SendLongMessage(input, meals, sendIngredients);
 
@@ -372,6 +280,33 @@ namespace MiraBot.Modules
             {
                 await ReplyAsync(message);
             }
+        }
+
+
+        public async Task<int> GetMealIndexAsync(List<Meal> meals, string placeholder, string customId, string? description, SocketInteractionContext ctx)
+        {
+            int selection;
+            if (meals.Count <= selectMenuLimit)
+            {
+                var names = meals.Select(m => m.Name).ToList();
+
+                await components.GenerateMenuAsync(names,
+                    placeholder,
+                    customId,
+                    description,
+                    ctx);
+                selection = modifyValue;
+                modifyValue = 0;
+            }
+
+            else
+            {
+                await SendLongMessageAsync(meals: meals);
+                selection = await GetValidNumberAsync(0, meals.Count);
+                selection--;
+            }
+
+            return selection;
         }
 
 
@@ -418,7 +353,7 @@ namespace MiraBot.Modules
         }
 
 
-        public async Task<string> CheckInvalidNameAsync(bool isIngredient, string? name = null, int maxLength = maxNameLength)
+        public async Task<string> GetValidNameAsync(bool isIngredient, string? name = null)
         {
             bool isValid = false;
 
@@ -440,42 +375,37 @@ namespace MiraBot.Modules
                     name = response.Value.Content;
                 }
 
-                if (groceryAssistant.CheckForInvalidName(name, maxLength))
+                int maxLength = isIngredient ? maxIngredientLength : maxNameLength;
+
+                if (name.Length > maxLength)
                 {
-                    isValid = true;
-                }
-                else
-                {
-                    if (maxLength <= 50)
-                    {
-                        await ReplyAsync($"{name} isn't a valid name. Make sure meal/ingredient names aren't longer than {maxLength}. Shorten it and try again, please!");
-                    }
-                    if (maxLength > 50)
-                    {
-                        await ReplyAsync($"This input isn't valid! It can't be longer than {maxLength} characters. Shorten it and then try again, please!");
-                    }
+                    await ReplyAsync($"Your input contains too many characters! {(isIngredient ? "Ingredients" : "Meal names")} can't contain more than {maxLength} characters. Shorten your input and try again!");
                     name = null;
+                    continue;
                 }
 
-                if (name is not null && await groceryAssistant.HasDuplicateNameAsync(name, Context.User.Username) && !isIngredient)
+                if (await groceryAssistant.IsDuplicateNameAsync(name, Context.User.Username) && !isIngredient)
                 {
-                    isValid = false;
                     await ReplyAsync($"I'm sorry, I can't add {name} as a meal because this meal already exists in your database. Do you want to name it something else?");
                     name = null;
+                    continue;
                 }
+
+                isValid = true;
             }
 
             return name;
         }
+
 
         public async Task<List<string>> GetIngredientsAsync(string response)
         {
             string[] ingredients = response.Split(',');
             var trimmedIngredients = ingredients.Select(i => i.Trim()).ToList();
             trimmedIngredients = trimmedIngredients.Where(t => !string.IsNullOrWhiteSpace(t)).ToList();
-            if (trimmedIngredients.Count() > maxIngredients)
+            if (trimmedIngredients.Count > maxIngredients)
             {
-                await ReplyAsync($"This meal has too many ingredients! You have {trimmedIngredients.Count()} ingredients, but max is {maxIngredients}. Correct this, and do /addmeal again once you're ready to try again.");
+                await ReplyAsync($"This meal has too many ingredients! You have {trimmedIngredients.Count} ingredients, but max is {maxIngredients}. Correct this, and do /addmeal again once you're ready to try again.");
                 return null;
             }
             return trimmedIngredients;
@@ -484,11 +414,11 @@ namespace MiraBot.Modules
         public async Task<List<string>> AddIngredientsAsync()
         {
             await ReplyAsync("Okay, now what are the ingredients for this meal? Separate each ingredient with a comma!");
-            var response = await CheckInvalidNameAsync(isIngredient: true, maxLength: maxIngredientLength);
+            var response = await GetValidNameAsync(isIngredient: true);
             var trimmedIngredients = await GetIngredientsAsync(response);
-            for (int i = 0; i < trimmedIngredients.Count(); i++)
+            for (int i = 0; i < trimmedIngredients.Count; i++)
             {
-                trimmedIngredients[i] = await CheckInvalidNameAsync(isIngredient: true, trimmedIngredients[i]);
+                trimmedIngredients[i] = await GetValidNameAsync(isIngredient: true, trimmedIngredients[i]);
             }
 
             return trimmedIngredients;

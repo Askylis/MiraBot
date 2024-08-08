@@ -14,19 +14,14 @@ namespace MiraBot.GroceryAssistance
             this.groceryAssistantRepository = groceryAssistantRepository;
         }
 
-        public async Task AddIngredientAsync(string name, string ownerName)
-        {
-            await this.groceryAssistantRepository.AddIngredientAsync(name, ownerName);
-        }
-
         public async Task AddMealAsync(string mealName, List<string> ingredients, string ownerName, DateOnly? date = null)
         {
             await this.groceryAssistantRepository.AddMealAsync(mealName, ingredients, ownerName, date);
         }
 
-        public async Task DeleteMealAsync(string mealName, string ownerName)
+        public async Task DeleteMealAsync(int mealId, string ownerName)
         {
-            await groceryAssistantRepository.DeleteMealAsync(mealName, ownerName);
+            await groceryAssistantRepository.DeleteMealAsync(mealId, ownerName);
         }
 
         public async Task<List<Meal>> GetAllMealsAsync(string ownerName)
@@ -49,14 +44,13 @@ namespace MiraBot.GroceryAssistance
             return randomizedMeals.ToList();
         }
 
-        public async Task<bool> CheckForValidNumberAsync(int number, string ownerName, bool allowZero)
+        public async Task<bool> IsValidNumberAsync(int number, string ownerName, bool allowZero)
         {
-            if ((!allowZero && number <= 0) || (allowZero && number < 0)) 
+            if ((!allowZero && number <= 0) || (allowZero && number < 0))
             {
                 return false;
             }
-            var allMeals = await groceryAssistantRepository.GetAllMealsAsync(ownerName);
-            return number <= allMeals.Count();
+            return number <= await groceryAssistantRepository.CountMealsByUserAsync(ownerName);
         }
 
         public async Task<List<Meal>> ConvertMealsFileAsync(string[] mealsFile, string ownerName)
@@ -85,22 +79,9 @@ namespace MiraBot.GroceryAssistance
                 }
             }
 
-            foreach (var meal in meals)
-            {
-                if (meal.Ingredients.Count() < 1)
-                {
-                    invalidMeals.Add(meal);
-                }
-            }
+            invalidMeals.AddRange(meals.Where(m => m.Ingredients.Count < 1));
+            meals.RemoveAll(meal => invalidMeals.Contains(meal));
 
-            if (invalidMeals.Count() > 0)
-            {
-                foreach (var meal in invalidMeals)
-                {
-                    meals.Remove(meal);
-                }
-            }
-            
             if (meals.Count > 0)
             {
                 await groceryAssistantRepository.ConvertMealsFileAsync(meals, ownerName);
@@ -109,16 +90,8 @@ namespace MiraBot.GroceryAssistance
             return meals;
         }
 
-        public Ingredient UpdateIngredient(string name, string ownerName)
-        {
-            var ingredient = new Ingredient();
-            ingredient.Name = name;
-            ingredient.OwnerUserName = ownerName;
-            return ingredient;
-        }
 
-
-        public bool CheckForInvalidName(string name, int maxLength)
+        public bool IsValidName(string name, int maxLength)
         {
             return name.Length <= maxLength;
         }
@@ -163,13 +136,10 @@ namespace MiraBot.GroceryAssistance
             return message;
         }
 
-        public async Task<bool> HasDuplicateNameAsync(string name, string ownerName)
+        public async Task<bool> IsDuplicateNameAsync(string name, string ownerName)
         {
-            var meals = await groceryAssistantRepository.GetAllMealsAsync(ownerName);
-            return meals.Exists(x => x.Name.ToUpperInvariant() == name.ToUpperInvariant());  
+            return await groceryAssistantRepository.IsDuplicateNameAsync(name, ownerName);
         }
-
-
 
         public static DateOnly? ConvertToDate(string mealName)
         {
@@ -212,7 +182,7 @@ namespace MiraBot.GroceryAssistance
         }
 
 
-        public List<string> SendLongMessage(List<string> input = null, List<Meal> meals = null, bool sendIngredients = false)
+        public List<string> SendLongMessage(List<string>? input = null, List<Meal>? meals = null, bool sendIngredients = false)
         {
             var response = new StringBuilder();
             var messages = new List<string>();
@@ -269,7 +239,7 @@ namespace MiraBot.GroceryAssistance
         public void WriteSelectionFile(string filePath, IEnumerable<Meal> results)
         {
             var ingredientsList = new List<string>();
-            using (StreamWriter writer = new (filePath))
+            using (StreamWriter writer = new(filePath))
             {
                 writer.WriteLine("Meals:\n");
                 foreach (var meal in results)
@@ -295,7 +265,7 @@ namespace MiraBot.GroceryAssistance
         public void WriteListFile(string filePath, IEnumerable<Meal> results)
         {
             int counter = 1;
-            using (StreamWriter writer = new (filePath))
+            using (StreamWriter writer = new(filePath))
             {
                 foreach (var meal in results)
                 {

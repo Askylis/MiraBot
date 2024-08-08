@@ -11,19 +11,7 @@ namespace MiraBot.DataAccess.Repositories
             this.databaseOptions = databaseOptions.Value;
         }
 
-        public async Task AddIngredientAsync(string name, string ownerName)
-        {
-            using (var context = new MiraBotContext(databaseOptions.ConnectionString))
-            {
-                var ingredient = new Ingredient();
-                ingredient.Name = name;
-                ingredient.OwnerUserName = ownerName;
-                context.Ingredients.Add(ingredient);
-                await context.SaveChangesAsync();
-            }
-        }
-
-        public async Task AddMealAsync(string mealName, List<string> ingredientNames, string ownerName, DateOnly? date)
+        public async Task AddMealAsync(string mealName, List<string> ingredients, string ownerName, DateOnly? date)
         {
             using (var context = new MiraBotContext(databaseOptions.ConnectionString))
             {
@@ -33,30 +21,30 @@ namespace MiraBot.DataAccess.Repositories
                     OwnerUserName = ownerName,
                     Date = date,
                     Ingredients = new List<Ingredient>()
-            };
+                };
 
-                    foreach (var ingredientName in ingredientNames)
+                foreach (var ingredientName in ingredients)
+                {
+                    var newIngredient = new Ingredient
                     {
-                        var newIngredient = new Ingredient
-                        {
-                            Name = ingredientName,
-                            OwnerUserName = ownerName
-                        };
-                        meal.Ingredients.Add(newIngredient);
-                    }
-     
+                        Name = ingredientName,
+                        OwnerUserName = ownerName
+                    };
+                    meal.Ingredients.Add(newIngredient);
+                }
+
                 context.Meals.Add(meal);
                 await context.SaveChangesAsync();
             }
         }
 
-        public async Task DeleteMealAsync(string mealName, string ownerName)
+        public async Task DeleteMealAsync(int mealId, string ownerName)
         {
             using (var context = new MiraBotContext(databaseOptions.ConnectionString))
             {
                 var meal = await context.Meals
                 .Include(m => m.Ingredients)
-                .FirstOrDefaultAsync(m => m.Name == mealName && m.OwnerUserName == ownerName);
+                .FirstOrDefaultAsync(m => m.MealId == mealId && m.OwnerUserName == ownerName);
                 context.Meals.Remove(meal);
                 await context.SaveChangesAsync();
             }
@@ -85,12 +73,22 @@ namespace MiraBot.DataAccess.Repositories
             }
         }
 
-        public async Task<Meal> GetMealByNameAsync(string name, string ownerName)
+        public async Task<int> CountMealsByUserAsync(string ownerName)
         {
             using (var context = new MiraBotContext(databaseOptions.ConnectionString))
             {
-                return await context.Meals
-                .FirstOrDefaultAsync(m => m.Name == name && m.OwnerUserName == ownerName);
+                return context.Meals.Count(m => m.OwnerUserName == ownerName);
+            }
+        }
+
+        public async Task<bool> IsDuplicateNameAsync(string name, string ownerName)
+        {
+            using (var context = new MiraBotContext(databaseOptions.ConnectionString))
+            {
+                var upperName = name.ToUpper();
+                var count = await context.Meals
+                    .CountAsync(m => m.Name.ToUpper() == upperName && m.OwnerUserName == ownerName);
+                return count > 0;
             }
         }
     }

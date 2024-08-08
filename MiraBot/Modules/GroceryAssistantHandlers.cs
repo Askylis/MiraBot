@@ -4,6 +4,8 @@ namespace MiraBot.Modules
 {
     public class GroceryAssistantHandlers : InteractionModuleBase<SocketInteractionContext>
     {
+        //these are kinda redundant now bc all the menus do the same thing. But I'm gonna leave what I have here anyway.
+        //In case I ever change how the menus work, I already have all this setup and ready to go so it'll be easier to modify. 
         [ComponentInteraction("override-menu")]
         public async Task OverrideMenuHandler(string[] inputs)
         {
@@ -35,25 +37,13 @@ namespace MiraBot.Modules
                 };
 
                 await ReplyAsync(message);
-
-                if (menuType == "override")
-                    // I KNOW THAT GETTING THE VALUES FROM THESE MENU HANDLERS IN THIS WAY IS WRONG AND VERY UGLY
-                    // PLEASE DON'T YELL AT ME
-                    // I don't know a better way to do it yet and was gonna ask for your help :(
-                    // I tried tons of different solutions and just couldn't get anything else to work so I'm kinda stumped
-                    GroceryAssistantModule.overrideValue = -1;
-                else 
-                    GroceryAssistantModule.modifyValue = -1;
+                GroceryAssistantModule.modifyValue = -1;
 
             }
             else
             {
                 int parsedValue = int.Parse(inputs[0].Replace("option-", ""));
-
-                if (menuType == "override")
-                    GroceryAssistantModule.overrideValue = parsedValue;
-                else 
-                    GroceryAssistantModule.modifyValue = parsedValue;
+                GroceryAssistantModule.modifyValue = parsedValue;
             }
         }
 
