@@ -8,6 +8,7 @@ using Microsoft.Extensions.Hosting;
 using MiraBot.DataAccess;
 using MiraBot.DataAccess.Repositories;
 using MiraBot.GroceryAssistance;
+using MiraBot.Miraminders;
 using Fergun.Interactive;
 using MiraBot.Modules;
 
@@ -28,11 +29,14 @@ builder.Services.AddSingleton(x =>
 });
 builder.Services.AddSingleton(new InteractiveConfig { DefaultTimeout = TimeSpan.FromMinutes(5) });
 builder.Services.AddSingleton<InteractiveService>();
+builder.Services.AddSingleton<RemindersCache>();
 builder.Services.AddHostedService<InteractionHandlingService>();
 builder.Services.AddHostedService<DiscordStartupService>();
+builder.Services.AddHostedService<RemindersProcessingService>();
 builder.Services.Configure<DiscordOptions>(config.GetSection("Discord"));
 builder.Services.Configure<DatabaseOptions>(config.GetSection("Database"));
 builder.Services.AddTransient<IGroceryAssistantRepository, GroceryAssistantRepository>();
+builder.Services.AddTransient<MiramindersRepository>();
 builder.Services.AddTransient<GroceryAssistantComponents>();
 builder.Services.AddTransient<GroceryAssistant>();
 

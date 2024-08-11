@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiraBot.DataAccess", "MiraB
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiraBot.GroceryAssistance", "MiraBot.GroceryAssistant\MiraBot.GroceryAssistance.csproj", "{11CB3121-1C96-4A0B-9B2E-A0DDDFB21B66}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiraBot.Miraminders", "MiraBot.Miraminders\MiraBot.Miraminders.csproj", "{F5E793B8-C233-44C6-AFC4-B7BDA653E42A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{11CB3121-1C96-4A0B-9B2E-A0DDDFB21B66}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{11CB3121-1C96-4A0B-9B2E-A0DDDFB21B66}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{11CB3121-1C96-4A0B-9B2E-A0DDDFB21B66}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F5E793B8-C233-44C6-AFC4-B7BDA653E42A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F5E793B8-C233-44C6-AFC4-B7BDA653E42A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F5E793B8-C233-44C6-AFC4-B7BDA653E42A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F5E793B8-C233-44C6-AFC4-B7BDA653E42A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

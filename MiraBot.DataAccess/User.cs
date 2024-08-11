@@ -7,6 +7,8 @@ public partial class User
 {
     public string UserName { get; set; } = null!;
 
+    public string? TimeZone { get; set; }
+
     public virtual ICollection<Ingredient> Ingredients { get; set; } = new List<Ingredient>();
 
     public virtual ICollection<Meal> Meals { get; set; } = new List<Meal>();

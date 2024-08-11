@@ -64,6 +64,7 @@ namespace MiraBot.Modules
                     break;
                 }
                 await groceryAssistant.DeleteMealAsync(meals[index].MealId, Context.User.Username);
+                await ReplyAsync($"Okay, removed {meals[index].Name}! Need to remove anything else?");
                 meals.RemoveAt(index);
             }
         }

@@ -5,15 +5,15 @@ namespace MiraBot.DataAccess.Repositories
 {
     public class GroceryAssistantRepository : IGroceryAssistantRepository
     {
-        private readonly DatabaseOptions databaseOptions;
+        private readonly DatabaseOptions _databaseOptions;
         public GroceryAssistantRepository(IOptions<DatabaseOptions> databaseOptions)
         {
-            this.databaseOptions = databaseOptions.Value;
+            _databaseOptions = databaseOptions.Value;
         }
 
         public async Task AddMealAsync(string mealName, List<string> ingredients, string ownerName, DateOnly? date)
         {
-            using (var context = new MiraBotContext(databaseOptions.ConnectionString))
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
                 var meal = new Meal
                 {
@@ -40,7 +40,7 @@ namespace MiraBot.DataAccess.Repositories
 
         public async Task DeleteMealAsync(int mealId, string ownerName)
         {
-            using (var context = new MiraBotContext(databaseOptions.ConnectionString))
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
                 var meal = await context.Meals
                 .Include(m => m.Ingredients)
@@ -52,7 +52,7 @@ namespace MiraBot.DataAccess.Repositories
 
         public async Task<List<Meal>> GetAllMealsAsync(string ownerName)
         {
-            using (var context = new MiraBotContext(databaseOptions.ConnectionString))
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
                 return await context.Meals
                .Include(m => m.Ingredients)
@@ -63,7 +63,7 @@ namespace MiraBot.DataAccess.Repositories
 
         public async Task ConvertMealsFileAsync(List<Meal> meals, string ownerName)
         {
-            using (var context = new MiraBotContext(databaseOptions.ConnectionString))
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
                 foreach (var meal in meals)
                 {
@@ -75,7 +75,7 @@ namespace MiraBot.DataAccess.Repositories
 
         public async Task<int> CountMealsByUserAsync(string ownerName)
         {
-            using (var context = new MiraBotContext(databaseOptions.ConnectionString))
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
                 return context.Meals.Count(m => m.OwnerUserName == ownerName);
             }
@@ -83,7 +83,7 @@ namespace MiraBot.DataAccess.Repositories
 
         public async Task<bool> IsDuplicateNameAsync(string name, string ownerName)
         {
-            using (var context = new MiraBotContext(databaseOptions.ConnectionString))
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
                 var upperName = name.ToUpper();
                 var count = await context.Meals

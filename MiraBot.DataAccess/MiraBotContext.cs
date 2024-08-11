@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 
 namespace MiraBot.DataAccess;
 
@@ -24,6 +26,8 @@ public partial class MiraBotContext : DbContext
 
     public virtual DbSet<Permission> Permissions { get; set; }
 
+    public virtual DbSet<Reminder> Reminders { get; set; }
+
     public virtual DbSet<User> Users { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -42,7 +46,7 @@ public partial class MiraBotContext : DbContext
 
             entity.HasOne(d => d.OwnerUserNameNavigation).WithMany(p => p.Ingredients)
                 .HasForeignKey(d => d.OwnerUserName)
-                .OnDelete(DeleteBehavior.Cascade)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Ingredients_Users");
         });
 
@@ -66,7 +70,7 @@ public partial class MiraBotContext : DbContext
                     r => r.HasOne<Ingredient>().WithMany()
                         .HasForeignKey("IngredientId")
                         .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_IngredientsInMeals_Ingredients"),
+                        .HasConstraintName("FK_IngredientsInMeals_Ingredients"),
                     l => l.HasOne<Meal>().WithMany()
                         .HasForeignKey("MealId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -97,11 +101,27 @@ public partial class MiraBotContext : DbContext
                 .IsUnicode(false);
         });
 
+        modelBuilder.Entity<Reminder>(entity =>
+        {
+            entity.Property(e => e.Message)
+                .HasMaxLength(250)
+                .IsUnicode(false);
+            entity.Property(e => e.OwnerName)
+                .HasMaxLength(32)
+                .IsUnicode(false);
+            entity.Property(e => e.RecipientName)
+                .HasMaxLength(32)
+                .IsUnicode(false);
+        });
+
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(e => e.UserName);
 
             entity.Property(e => e.UserName)
+                .HasMaxLength(32)
+                .IsUnicode(false);
+            entity.Property(e => e.TimeZone)
                 .HasMaxLength(32)
                 .IsUnicode(false);
 
