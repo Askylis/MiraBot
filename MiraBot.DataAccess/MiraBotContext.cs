@@ -7,7 +7,6 @@ namespace MiraBot.DataAccess;
 public partial class MiraBotContext : DbContext
 {
     private readonly string _connectionString;
-
     public MiraBotContext(string connectionString)
     {
         _connectionString = connectionString;
@@ -73,7 +72,6 @@ public partial class MiraBotContext : DbContext
                         .HasConstraintName("FK_IngredientsInMeals_Ingredients"),
                     l => l.HasOne<Meal>().WithMany()
                         .HasForeignKey("MealId")
-                        .OnDelete(DeleteBehavior.Cascade)
                         .HasConstraintName("FK_IngredientsInMeals_IngredientsInMeals"),
                     j =>
                     {
@@ -121,9 +119,18 @@ public partial class MiraBotContext : DbContext
             entity.Property(e => e.UserName)
                 .HasMaxLength(32)
                 .IsUnicode(false);
+            entity.Property(e => e.Nickname)
+                .HasMaxLength(32)
+                .IsUnicode(false);
             entity.Property(e => e.TimeZone)
                 .HasMaxLength(32)
                 .IsUnicode(false);
+            entity.Property(e => e.DiscordId)
+                .HasConversion(
+                    v => (long)v,
+                    v => (ulong)v
+        )
+        .HasColumnType("bigint");
 
             entity.HasMany(d => d.Permissions).WithMany(p => p.UserNames)
                 .UsingEntity<Dictionary<string, object>>(

@@ -50,6 +50,23 @@ namespace MiraBot.DataAccess.Repositories
             }
         }
 
+        public async Task<bool> UserExistsAsync(User user)
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                return context.Users.Contains(user);
+            }
+        }
+
+        public async Task AddNewUserAsync(User user)
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                context.Users.Add(user);
+                await context.SaveChangesAsync();
+            }
+        }
+
         public async Task<List<Meal>> GetAllMealsAsync(string ownerName)
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
@@ -61,7 +78,7 @@ namespace MiraBot.DataAccess.Repositories
             }
         }
 
-        public async Task ConvertMealsFileAsync(List<Meal> meals, string ownerName)
+        public async Task ConvertMealsFileAsync(List<Meal> meals)
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {

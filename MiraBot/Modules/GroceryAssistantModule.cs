@@ -28,6 +28,7 @@ namespace MiraBot.Modules
         [SlashCommand("addmeal", "Add a new meal and associated ingredients.")]
         public async Task AddMealAsync()
         {
+            await groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
             await RespondAsync("What's the name of your new meal?");
             string mealName = await GetValidNameAsync(isIngredient: false);
             if (mealName is null)
@@ -43,6 +44,7 @@ namespace MiraBot.Modules
         [SlashCommand("deletemeal", "Lets you delete one of your saved meals.")]
         public async Task DeleteMealAsync()
         {
+            await groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
             int index = 0;
             await RespondAsync("One moment, please!");
             var meals = await groceryAssistant.GetAllMealsAsync(Context.User.Username);
@@ -73,6 +75,7 @@ namespace MiraBot.Modules
         [SlashCommand("editmeal", "Lets you edit one of your saved meals.")]
         public async Task EditMealAsync()
         {
+            await groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
             int index = 0;
             int selection = 0;
             await RespondAsync("One moment, please!");
@@ -154,6 +157,7 @@ namespace MiraBot.Modules
         [SlashCommand("listmeals", "Lists all meals, along with associated ingredients, that are owned by you.")]
         public async Task ListMealsAsync()
         {
+            await groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
             await RespondAsync("Gimme just a sec!");
             var meals = await groceryAssistant.GetAllMealsAsync(Context.User.Username);
 
@@ -178,6 +182,7 @@ namespace MiraBot.Modules
         [SlashCommand("ga", "Generates a new list of grocery ideas.")]
         public async Task GenerateMealsListAsync()
         {
+            await groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
             var meals = await groceryAssistant.GetAllMealsAsync(Context.User.Username);
             var mealCount = meals.Count;
             await RespondAsync($"Okay, tell me how many meals you want! You have {mealCount} total meals. You can also select \"0\" to cancel this command.");
@@ -227,6 +232,7 @@ namespace MiraBot.Modules
         [SlashCommand("convert", "Converts old Grocery Assist meals files into a format that Mira can understand.")]
         public async Task ConvertMealsFileAsync()
         {
+            await groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
             await RespondAsync("I'll help you convert the old meals file from the original Grocery Assistant to a format that I can understand! Just send your meals file and I'll do the rest! Keep in mind that I will not convert any meals you have that have no ingredients listed.");
             var mealsFile = await interactiveService.NextMessageAsync(x => x.Author.Id == Context.User.Id && x.Channel.Id == Context.Channel.Id,
             timeout: TimeSpan.FromMinutes(2));

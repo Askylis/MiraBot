@@ -29,6 +29,20 @@ namespace MiraBot.GroceryAssistance
             return await groceryAssistantRepository.GetAllMealsAsync(ownerName);
         }
 
+        public async Task CheckForNewUserAsync(string userName, ulong discordId)
+        {
+            var user = new User
+            {
+                UserName = userName,
+                DiscordId = discordId
+            };
+            if (!await groceryAssistantRepository.UserExistsAsync(user))
+            {
+                Console.WriteLine("This user does not exist! Adding user now.");
+                await groceryAssistantRepository.AddNewUserAsync(user);
+            }
+        }
+
         public IEnumerable<string> TrimIngredients(string ingredientsInput)
         {
             string[] ingredients = ingredientsInput.Split(",");
@@ -84,7 +98,7 @@ namespace MiraBot.GroceryAssistance
 
             if (meals.Count > 0)
             {
-                await groceryAssistantRepository.ConvertMealsFileAsync(meals, ownerName);
+                await groceryAssistantRepository.ConvertMealsFileAsync(meals);
             }
 
             return meals;
