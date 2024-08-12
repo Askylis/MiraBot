@@ -7,6 +7,7 @@ namespace MiraBot.Miraminders
     public class RemindersCache
     {
         private List<Reminder> cache;
+        private List<Reminder>? remindersToSend = new();
         private readonly MiramindersRepository _repository;
         public RemindersCache(MiramindersRepository repository)
         {
@@ -21,8 +22,25 @@ namespace MiraBot.Miraminders
                 cache.Clear();
             }
             allReminders = await _repository.GetRemindersAsync();
-            var reminders = allReminders.Where(r => !r.IsCompleted);
+            var reminders = allReminders.Where(r => !r.IsCompleted).ToList();
+            Console.WriteLine(reminders.Count);
             cache = reminders.ToList();
+        }
+
+        public async Task<List<Reminder>?> GetActiveReminder()
+        {
+            if (cache is not null)
+            {
+                foreach (var reminder in cache)
+                {
+                    if (!reminder.IsCompleted && reminder.DateTime < DateTime.UtcNow)
+                    {
+                        remindersToSend.Add(reminder);
+                        await _repository.MarkCompletedAsync(reminder);
+                    }
+                }
+            }
+            return remindersToSend;
         }
 
         public async Task AddReminderAsync(string ownerName, string recipientName, string message, DateTime dateTime)

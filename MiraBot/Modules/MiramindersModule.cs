@@ -1,6 +1,6 @@
 ﻿using Discord.Interactions;
+using Discord;
 using Fergun.Interactive;
-using Microsoft.IdentityModel.Tokens;
 using MiraBot.DataAccess;
 using MiraBot.Miraminders;
 
@@ -22,15 +22,15 @@ namespace MiraBot.Modules
         public async Task AddReminder(int minutesFromNow, string reminderMessage)
         {
             await RespondAsync("Working on it...");
-            if (await _cache.UserTimeZone(Context.User.Username) is null)
-            {
-                await ReplyAsync("You don't have a timezone registered!");
-                await GetUserTimeZoneAsync();
-                return;
-            }
+            //if (await _cache.UserTimeZone(Context.User.Username) is null)
+            //{
+            //    await ReplyAsync("You don't have a timezone registered!");
+            //    await GetUserTimeZoneAsync();
+            //    return;
+            //}
             var reminderDateTime = DateTime.UtcNow + TimeSpan.FromMinutes(minutesFromNow);
             await _cache.AddReminderAsync(Context.User.Username, Context.User.Username, reminderMessage, reminderDateTime);
-            await ReplyAsync($"Your reminder is set for {reminderDateTime}.");
+            await ReplyAsync($"Got it! Saved this reminder!");
         }
 
         public async Task GetUserTimeZoneAsync()
@@ -39,8 +39,15 @@ namespace MiraBot.Modules
             var timeZones = TimeZoneInfo.GetSystemTimeZones();
             foreach (var timeZone in timeZones)
             {
-                Console.WriteLine(timeZone.ToString());
+                //Console.WriteLine(timeZone.ToString());
+                Console.WriteLine(timeZone.Id.ToString());
             }
+        }
+
+
+        public async Task SetRecurringReminderAsync(int dayOfMonth)
+        {
+            var currentDate = DateTime.UtcNow;
         }
     }
 }

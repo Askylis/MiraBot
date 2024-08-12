@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics.Contracts;
 
 namespace MiraBot.DataAccess.Repositories
 {
@@ -26,6 +27,16 @@ namespace MiraBot.DataAccess.Repositories
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
                 return await context.Reminders.ToListAsync();
+            }
+        }
+
+        public async Task MarkCompletedAsync(Reminder completed)
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                var reminder = await context.Reminders.FirstOrDefaultAsync(r => r.ReminderId == completed.ReminderId);
+                reminder.IsCompleted = true;
+                await context.SaveChangesAsync();
             }
         }
 
