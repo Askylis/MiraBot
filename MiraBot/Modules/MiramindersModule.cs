@@ -1,22 +1,20 @@
 ﻿using Discord.Interactions;
 using Discord;
 using Fergun.Interactive;
-using MiraBot.DataAccess;
 using MiraBot.Miraminders;
-using MiraBot.GroceryAssistance;
 
 namespace MiraBot.Modules
 {
     public class MiramindersModule : InteractionModuleBase<SocketInteractionContext>
     {
-        private readonly InteractiveService _interactiveService;
+        private readonly InteractiveService _interactive;
         private readonly RemindersCache _cache;
         private readonly Miraminder _reminder;
         internal const int maxMessageLength = 250;
 
-        public MiramindersModule(InteractiveService interactiveService, RemindersCache cache, Miraminder reminder)
+        public MiramindersModule(InteractiveService interactive, RemindersCache cache, Miraminder reminder)
         {
-            _interactiveService = interactiveService;
+            _interactive = interactive;
             _cache = cache;
             _reminder = reminder;
         }
@@ -34,7 +32,6 @@ namespace MiraBot.Modules
             {
                 await ReplyAsync("You don't have a timezone registered!");
                 await GetUserTimeZoneAsync();
-                return;
             }
             var reminderDateTime = DateTime.UtcNow + TimeSpan.FromDays(days) + TimeSpan.FromHours(hours) + TimeSpan.FromMinutes(minutes);
             await _cache.AddReminderAsync(Context.User.Id, Context.User.Id, reminderMessage, reminderDateTime);
@@ -64,7 +61,29 @@ namespace MiraBot.Modules
 
         public async Task GetUserTimeZoneAsync()
         {
+            bool isValid = false;
             await SendTimezoneFileAsync();
+            while (!isValid)
+            {
+                await ReplyAsync("Copy your timezone exactly how it's listed in this file, and send it to me so I can register your timezone!");
+                var input = await _interactive.NextMessageAsync(x => x.Author.Id == Context.User.Id && x.Channel.Id == Context.Channel.Id,
+                timeout: TimeSpan.FromMinutes(2));
+                var timezone = input.Value.Content.Trim();
+                if (!input.IsSuccess)
+                {
+                    return;
+                }
+                if (!_reminder.IsValidTimezone(timezone))
+                {
+                    await ReplyAsync("The timezone you entered isn't valid! Make sure to copy your timezone exactly as it's listed in the file I sent.");
+                }
+                else
+                {
+                    await ReplyAsync($"{timezone} is valid!");
+                    await _reminder.AddTimezoneToUser(Context.User.Id, timezone);
+                    isValid = true;
+                }
+            }
         }
 
 

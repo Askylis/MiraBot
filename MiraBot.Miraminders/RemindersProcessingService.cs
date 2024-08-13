@@ -1,8 +1,6 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using Discord.WebSocket;
+using Microsoft.Extensions.Hosting;
 using MiraBot.DataAccess;
-using System.Diagnostics;
-using Discord;
-using Discord.WebSocket;
 
 namespace MiraBot.Miraminders
 {

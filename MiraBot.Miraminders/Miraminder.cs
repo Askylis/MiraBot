@@ -1,10 +1,5 @@
 ﻿using MiraBot.DataAccess;
 using MiraBot.DataAccess.Repositories;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiraBot.Miraminders
 {
@@ -57,6 +52,18 @@ namespace MiraBot.Miraminders
         public static async Task DeleteReminderAsync()
         {
 
+        }
+
+        public bool IsValidTimezone(string timezoneId)
+        {
+            var timezones = TimeZoneInfo.GetSystemTimeZones();
+            return timezones.Any(tz => tz.DisplayName.Equals(timezoneId, StringComparison.OrdinalIgnoreCase));
+        }
+
+
+        public async Task AddTimezoneToUser(ulong discordId, string timezoneId)
+        {
+            await _repository.AddTimezoneToUser(discordId, timezoneId);
         }
 
         public void BuildTimezoneFile(string filePath)

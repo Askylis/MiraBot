@@ -1,6 +1,5 @@
-﻿using Microsoft.Extensions.Options;
-using Microsoft.EntityFrameworkCore;
-using System.Diagnostics.Contracts;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace MiraBot.DataAccess.Repositories
 {
@@ -83,7 +82,7 @@ namespace MiraBot.DataAccess.Repositories
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
                 var user = await context.Users.Where(u => u.DiscordId == discordId).FirstOrDefaultAsync();
-                return user?.TimeZone;
+                return user?.Timezone;
             }
         }
 
@@ -92,6 +91,16 @@ namespace MiraBot.DataAccess.Repositories
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
                 return await context.Users.AnyAsync(u => u.DiscordId == discordId);
+            }
+        }
+
+        public async Task AddTimezoneToUser(ulong discordId, string timezoneId)
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                var user = await GetUserByDiscordIdAsync(discordId, context);
+                user.Timezone = timezoneId;
+                await context.SaveChangesAsync();
             }
         }
     }

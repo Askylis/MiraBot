@@ -7,6 +7,7 @@ namespace MiraBot.DataAccess;
 public partial class MiraBotContext : DbContext
 {
     private readonly string _connectionString;
+
     public MiraBotContext(string connectionString)
     {
         _connectionString = connectionString;
@@ -16,6 +17,7 @@ public partial class MiraBotContext : DbContext
         : base(options)
     {
     }
+
 
     public virtual DbSet<Ingredient> Ingredients { get; set; }
 
@@ -67,6 +69,7 @@ public partial class MiraBotContext : DbContext
                         .HasConstraintName("FK_IngredientsInMeals_Ingredients"),
                     l => l.HasOne<Meal>().WithMany()
                         .HasForeignKey("MealId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .HasConstraintName("FK_IngredientsInMeals_IngredientsInMeals"),
                     j =>
                     {
@@ -122,19 +125,21 @@ public partial class MiraBotContext : DbContext
         {
             entity.HasKey(e => e.UserId).HasName("PK_Users_1");
 
+            entity.HasIndex(e => e.DiscordId, "IX_Users").IsUnique();
+
             entity.Property(e => e.Nickname)
                 .HasMaxLength(32)
                 .IsUnicode(false);
-            entity.Property(e => e.TimeZone)
-                .HasMaxLength(32)
+            entity.Property(e => e.Timezone)
+                .HasMaxLength(75)
                 .IsUnicode(false);
             entity.Property(e => e.UserName)
                 .HasMaxLength(32)
                 .IsUnicode(false);
             entity.Property(e => e.DiscordId)
-                .HasConversion(
-                    v => (long)v,
-                    v => (ulong)v);
+            .HasConversion(
+                v => (long)v,
+                v => (ulong)v);
 
             entity.HasMany(d => d.Permissions).WithMany(p => p.Users)
                 .UsingEntity<Dictionary<string, object>>(

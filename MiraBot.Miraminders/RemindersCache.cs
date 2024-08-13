@@ -1,6 +1,5 @@
 ﻿using MiraBot.DataAccess;
 using MiraBot.DataAccess.Repositories;
-using System.Diagnostics;
 
 namespace MiraBot.Miraminders
 {

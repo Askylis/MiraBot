@@ -11,7 +11,7 @@ public partial class User
 
     public ulong DiscordId { get; set; }
 
-    public string? TimeZone { get; set; }
+    public string? Timezone { get; set; }
 
     public string? Nickname { get; set; }
 
