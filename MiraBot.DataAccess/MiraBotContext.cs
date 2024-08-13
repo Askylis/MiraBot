@@ -36,15 +36,13 @@ public partial class MiraBotContext : DbContext
     {
         modelBuilder.Entity<Ingredient>(entity =>
         {
+            entity.Property(e => e.IngredientId).ValueGeneratedOnAdd();
             entity.Property(e => e.Name)
                 .HasMaxLength(50)
                 .IsUnicode(false);
-            entity.Property(e => e.OwnerUserName)
-                .HasMaxLength(32)
-                .IsUnicode(false);
 
-            entity.HasOne(d => d.OwnerUserNameNavigation).WithMany(p => p.Ingredients)
-                .HasForeignKey(d => d.OwnerUserName)
+            entity.HasOne(d => d.IngredientNavigation).WithOne(p => p.Ingredient)
+                .HasForeignKey<Ingredient>(d => d.IngredientId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Ingredients_Users");
         });
@@ -54,12 +52,9 @@ public partial class MiraBotContext : DbContext
             entity.Property(e => e.Name)
                 .HasMaxLength(50)
                 .IsUnicode(false);
-            entity.Property(e => e.OwnerUserName)
-                .HasMaxLength(32)
-                .IsUnicode(false);
 
-            entity.HasOne(d => d.OwnerUserNameNavigation).WithMany(p => p.Meals)
-                .HasForeignKey(d => d.OwnerUserName)
+            entity.HasOne(d => d.Owner).WithMany(p => p.Meals)
+                .HasForeignKey(d => d.OwnerId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Meals_Users");
 
@@ -104,35 +99,44 @@ public partial class MiraBotContext : DbContext
             entity.Property(e => e.Message)
                 .HasMaxLength(250)
                 .IsUnicode(false);
-            entity.Property(e => e.OwnerName)
-                .HasMaxLength(32)
-                .IsUnicode(false);
-            entity.Property(e => e.RecipientName)
-                .HasMaxLength(32)
-                .IsUnicode(false);
+
+            entity.HasMany(d => d.Users).WithMany(p => p.Reminders)
+                .UsingEntity<Dictionary<string, object>>(
+                    "ReminderRecipient",
+                    r => r.HasOne<User>().WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.ClientSetNull)
+                        .HasConstraintName("FK_ReminderRecipients_Users"),
+                    l => l.HasOne<Reminder>().WithMany()
+                        .HasForeignKey("ReminderId")
+                        .OnDelete(DeleteBehavior.ClientSetNull)
+                        .HasConstraintName("FK_ReminderRecipients_Reminders"),
+                    j =>
+                    {
+                        j.HasKey("ReminderId", "UserId");
+                        j.ToTable("ReminderRecipients");
+                    });
         });
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.UserName);
+            entity.HasKey(e => e.UserId).HasName("PK_Users_1");
 
-            entity.Property(e => e.UserName)
-                .HasMaxLength(32)
-                .IsUnicode(false);
             entity.Property(e => e.Nickname)
                 .HasMaxLength(32)
                 .IsUnicode(false);
             entity.Property(e => e.TimeZone)
                 .HasMaxLength(32)
                 .IsUnicode(false);
+            entity.Property(e => e.UserName)
+                .HasMaxLength(32)
+                .IsUnicode(false);
             entity.Property(e => e.DiscordId)
                 .HasConversion(
                     v => (long)v,
-                    v => (ulong)v
-        )
-        .HasColumnType("bigint");
+                    v => (ulong)v);
 
-            entity.HasMany(d => d.Permissions).WithMany(p => p.UserNames)
+            entity.HasMany(d => d.Permissions).WithMany(p => p.Users)
                 .UsingEntity<Dictionary<string, object>>(
                     "UserPermission",
                     r => r.HasOne<Permission>().WithMany()
@@ -140,16 +144,13 @@ public partial class MiraBotContext : DbContext
                         .OnDelete(DeleteBehavior.ClientSetNull)
                         .HasConstraintName("FK_UserPermissions_Permissions"),
                     l => l.HasOne<User>().WithMany()
-                        .HasForeignKey("UserName")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.ClientSetNull)
                         .HasConstraintName("FK_UserPermissions_Users"),
                     j =>
                     {
-                        j.HasKey("UserName", "PermissionId");
+                        j.HasKey("UserId", "PermissionId");
                         j.ToTable("UserPermissions");
-                        j.IndexerProperty<string>("UserName")
-                            .HasMaxLength(32)
-                            .IsUnicode(false);
                     });
         });
 

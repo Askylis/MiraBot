@@ -2,13 +2,14 @@
 {
     public interface IGroceryAssistantRepository
     {
-        Task AddMealAsync(string mealName, List<string> ingredients, string ownerName, DateOnly? date);
-        Task<List<Meal>> GetAllMealsAsync(string ownerName);
+        Task AddMealAsync(string mealName, List<string> ingredients, ulong discordId, DateOnly? date);
+        Task<List<Meal>> GetAllMealsAsync(ulong discordId);
         Task ConvertMealsFileAsync(List<Meal> meals);
-        Task DeleteMealAsync(int mealId, string ownerName);
-        Task<int> CountMealsByUserAsync(string ownerName);
-        Task<bool> IsDuplicateNameAsync(string name, string ownerName);
+        Task DeleteMealAsync(int mealId, ulong discordId);
+        Task<int> CountMealsByUserAsync(ulong discordId);
+        Task<bool> IsDuplicateNameAsync(string name, ulong discordId);
         Task<bool> UserExistsAsync(User user);
         Task AddNewUserAsync(User user);
+        Task<User> GetUserByDiscordId(ulong discordId);
     }
 }

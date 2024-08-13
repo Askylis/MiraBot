@@ -22,6 +22,15 @@ namespace MiraBot.DataAccess.Repositories
             }
         }
 
+        public async Task AddNewUserAsync(User user)
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                await context.Users.AddAsync(user);
+                await context.SaveChangesAsync();
+            }
+        }
+
         public async Task<List<Reminder>> GetRemindersAsync()
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
@@ -40,12 +49,50 @@ namespace MiraBot.DataAccess.Repositories
             }
         }
 
+        public async Task<User> GetUserByNameAsync(string userName)
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                return await context.Users.FirstOrDefaultAsync(u => u.UserName == userName);
+            }
+        }
+
+        public async Task<User> GetUserByDiscordId(ulong discordId)
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                return await GetUserByDiscordId(discordId, context);
+            }
+        }
+
+        public async Task<User> GetUserByUserId(int userId)
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                return await context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+            }
+        }
+
+        private async Task<User> GetUserByDiscordId(ulong discordId, MiraBotContext ctx)
+        {
+            return ctx.Users.FirstOrDefault(u => u.DiscordId == discordId);
+        }
+
         public async Task<string> GetUserTimeZone(string userName)
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
                 var user = context.Users.Where(u => u.UserName == userName).FirstOrDefault();
                 return user.TimeZone;
+            }
+        }
+
+        public async Task<bool> UserExistsAsync(ulong discordId)
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                var user = await GetUserByDiscordId(discordId, context);
+                return await context.Users.ContainsAsync(user);
             }
         }
     }

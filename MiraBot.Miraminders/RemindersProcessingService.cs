@@ -1,15 +1,19 @@
 ﻿using Microsoft.Extensions.Hosting;
 using MiraBot.DataAccess;
 using System.Diagnostics;
+using Discord;
+using Discord.WebSocket;
 
 namespace MiraBot.Miraminders
 {
     public class RemindersProcessingService : BackgroundService
     {
         private readonly RemindersCache _cache;
-        public RemindersProcessingService(RemindersCache cache) 
+        private readonly DiscordSocketClient _client;
+        public RemindersProcessingService(RemindersCache cache, DiscordSocketClient client) 
         { 
             _cache = cache;
+            _client = client;
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -24,8 +28,7 @@ namespace MiraBot.Miraminders
                     List<Reminder> completedReminders = new();
                     foreach (var reminder in reminders)
                     {
-                        Console.WriteLine($"Reminder for {reminder.RecipientName}! Reminder message: {reminder.Message}.");
-                        //SendReminderAsync
+                        await SendReminderAsync(reminder);
                         completedReminders.Add(reminder);
                     }
                     reminders.RemoveAll(completedReminders.Contains);
@@ -39,6 +42,21 @@ namespace MiraBot.Miraminders
                     refreshCounter = 0;
                 }
                 await Task.Delay(1000);
+            }
+        }
+
+        private async Task SendReminderAsync(Reminder reminder)
+        {
+            var user = await _cache.GetUserAsync(reminder.RecipientId);
+            var recipient = _client.GetUser(user.DiscordId);
+            var dm = await recipient.CreateDMChannelAsync();
+            if (reminder.OwnerId == reminder.RecipientId)
+            {
+                await dm.SendMessageAsync($"Here's your reminder! The message attached to it is this: \"{reminder.Message}\"");
+            }
+            else
+            {
+                await dm.SendMessageAsync($"You have a reminder from {reminder.OwnerId}! The message attached to this reminder is: \"{reminder.Message}\"");
             }
         }
     }

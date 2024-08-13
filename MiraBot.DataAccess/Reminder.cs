@@ -7,13 +7,15 @@ public partial class Reminder
 {
     public int ReminderId { get; set; }
 
-    public string OwnerName { get; set; } = null!;
+    public int OwnerId { get; set; }
 
-    public string RecipientName { get; set; } = null!;
+    public int RecipientId { get; set; }
 
     public string Message { get; set; } = null!;
 
     public bool IsCompleted { get; set; }
 
     public DateTime DateTime { get; set; }
+
+    public virtual ICollection<User> Users { get; set; } = new List<User>();
 }

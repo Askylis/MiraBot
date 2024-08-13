@@ -22,6 +22,10 @@ namespace MiraBot.Modules
         public async Task AddReminder(int minutesFromNow, string reminderMessage)
         {
             await RespondAsync("Working on it...");
+            if (!await _cache.UserExistsAsync(Context.User.Id))
+            {
+                await _cache.AddNewUserAsync(Context.User.Username, Context.User.Id);
+            }
             //if (await _cache.UserTimeZone(Context.User.Username) is null)
             //{
             //    await ReplyAsync("You don't have a timezone registered!");
@@ -29,7 +33,7 @@ namespace MiraBot.Modules
             //    return;
             //}
             var reminderDateTime = DateTime.UtcNow + TimeSpan.FromMinutes(minutesFromNow);
-            await _cache.AddReminderAsync(Context.User.Username, Context.User.Username, reminderMessage, reminderDateTime);
+            await _cache.AddReminderAsync(Context.User.Id, Context.User.Username, reminderMessage, reminderDateTime);
             await ReplyAsync($"Got it! Saved this reminder!");
         }
 
@@ -43,6 +47,7 @@ namespace MiraBot.Modules
                 Console.WriteLine(timeZone.Id.ToString());
             }
         }
+
 
 
         public async Task SetRecurringReminderAsync(int dayOfMonth)
