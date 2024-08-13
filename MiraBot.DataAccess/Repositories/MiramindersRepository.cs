@@ -57,12 +57,17 @@ namespace MiraBot.DataAccess.Repositories
             }
         }
 
-        public async Task<User> GetUserByDiscordId(ulong discordId)
+        public async Task<User> GetUserByDiscordIdAsync(ulong discordId)
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
-                return await GetUserByDiscordId(discordId, context);
+                return await GetUserByDiscordIdAsync(discordId, context);
             }
+        }
+
+        private async Task<User> GetUserByDiscordIdAsync(ulong discordId, MiraBotContext ctx)
+        {
+            return await ctx.Users.FirstOrDefaultAsync(u => u.DiscordId == discordId);
         }
 
         public async Task<User> GetUserByUserId(int userId)
@@ -73,17 +78,12 @@ namespace MiraBot.DataAccess.Repositories
             }
         }
 
-        private async Task<User> GetUserByDiscordId(ulong discordId, MiraBotContext ctx)
-        {
-            return ctx.Users.FirstOrDefault(u => u.DiscordId == discordId);
-        }
-
-        public async Task<string> GetUserTimeZone(string userName)
+        public async Task<string?> GetUserTimeZone(ulong discordId)
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
-                var user = context.Users.Where(u => u.UserName == userName).FirstOrDefault();
-                return user.TimeZone;
+                var user = await context.Users.Where(u => u.DiscordId == discordId).FirstOrDefaultAsync();
+                return user?.TimeZone;
             }
         }
 
@@ -91,8 +91,7 @@ namespace MiraBot.DataAccess.Repositories
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
-                var user = await GetUserByDiscordId(discordId, context);
-                return await context.Users.ContainsAsync(user);
+                return await context.Users.AnyAsync(u => u.DiscordId == discordId);
             }
         }
     }

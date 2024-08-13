@@ -16,7 +16,7 @@ namespace MiraBot.Miraminders
 
         public async Task RefreshCache()
         {
-            List<Reminder> allReminders = new();
+            List<Reminder> allReminders;
             if (cache is not null)
             {
                 cache.Clear();
@@ -43,10 +43,13 @@ namespace MiraBot.Miraminders
             return remindersToSend;
         }
 
-        public async Task AddReminderAsync(ulong ownerDiscordId, string recipientName, string message, DateTime dateTime)
+        public async Task AddReminderAsync(ulong ownerDiscordId, ulong recipientDiscordId, string message, DateTime dateTime)
         {
-            var owner = await _repository.GetUserByDiscordId(ownerDiscordId);
-            var recipient = await _repository.GetUserByNameAsync(recipientName);
+            var owner = await _repository.GetUserByDiscordIdAsync(ownerDiscordId);
+            var recipient = ownerDiscordId != recipientDiscordId
+                ? await _repository.GetUserByDiscordIdAsync(recipientDiscordId)
+                : owner;
+
             var reminder = new Reminder
             {
                 OwnerId = owner.UserId,
@@ -55,45 +58,10 @@ namespace MiraBot.Miraminders
                 DateTime = dateTime,
                 IsCompleted = false
             };
+
             cache.Add(reminder);
             await _repository.AddReminderAsync(reminder);
         }
 
-        public async Task<List<Reminder>> GetRemindersByUserAsync(ulong discordId)
-        {
-            var user = await _repository.GetUserByDiscordId(discordId);
-            var reminders = await _repository.GetRemindersAsync();
-            return reminders.Where(r => r.OwnerId == user.UserId).ToList();
-        }
-
-        public static async Task DeleteReminderAsync()
-        {
-
-        }
-
-        public async Task<string> UserTimeZone(string userName)
-        {
-            return await _repository.GetUserTimeZone(userName);
-        }
-
-        public async Task<User> GetUserAsync(int userId)
-        {
-            return await _repository.GetUserByUserId(userId);
-        }
-
-        public async Task<bool> UserExistsAsync(ulong discordId)
-        {
-            return await _repository.UserExistsAsync(discordId);
-        }
-
-        public async Task AddNewUserAsync(string userName, ulong discordId)
-        {
-            var user = new User
-            {
-                UserName = userName,
-                DiscordId = discordId
-            };
-            await _repository.AddNewUserAsync(user);
-        }
     }
 }

@@ -10,14 +10,15 @@ namespace MiraBot.Miraminders
     {
         private readonly RemindersCache _cache;
         private readonly DiscordSocketClient _client;
-        public RemindersProcessingService(RemindersCache cache, DiscordSocketClient client) 
+        private readonly Miraminder _reminder;
+        public RemindersProcessingService(RemindersCache cache, DiscordSocketClient client, Miraminder reminder) 
         { 
             _cache = cache;
             _client = client;
+            _reminder = reminder;
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            Debug.WriteLine("Processing service executed.");
             await _cache.RefreshCache();
             int refreshCounter = 0;
             while (!stoppingToken.IsCancellationRequested)
@@ -47,8 +48,8 @@ namespace MiraBot.Miraminders
 
         private async Task SendReminderAsync(Reminder reminder)
         {
-            var user = await _cache.GetUserAsync(reminder.RecipientId);
-            var recipient = _client.GetUser(user.DiscordId);
+            var user = await _reminder.GetUserAsync(reminder.RecipientId);
+            var recipient = await _client.Rest.GetUserAsync(user.DiscordId);
             var dm = await recipient.CreateDMChannelAsync();
             if (reminder.OwnerId == reminder.RecipientId)
             {
@@ -56,7 +57,18 @@ namespace MiraBot.Miraminders
             }
             else
             {
-                await dm.SendMessageAsync($"You have a reminder from {reminder.OwnerId}! The message attached to this reminder is: \"{reminder.Message}\"");
+                var owner = await _reminder.GetUserAsync(reminder.OwnerId);
+                var ownerDiscord = await _client.Rest.GetUserAsync(owner.DiscordId);
+                var ownerDm = await ownerDiscord.CreateDMChannelAsync();
+                try
+                {
+                    await dm.SendMessageAsync($"You have a reminder from {owner.UserName}! The message attached to this reminder is: \"{reminder.Message}\"");
+                    await ownerDm.SendMessageAsync($"I just sent your reminder to {recipient.Username}!");
+                }
+                catch
+                {
+                    await ownerDm.SendMessageAsync($"Your reminder to {recipient.Username} failed to send. This is likely due to their privacy settings.");
+                }
             }
         }
     }

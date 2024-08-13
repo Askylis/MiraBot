@@ -31,14 +31,14 @@ namespace MiraBot.GroceryAssistance
 
         public async Task CheckForNewUserAsync(string userName, ulong discordId)
         {
-            var user = new User
-            {
-                UserName = userName,
-                DiscordId = discordId
-            };
-            if (!await groceryAssistantRepository.UserExistsAsync(user))
+            if (!await groceryAssistantRepository.UserExistsAsync(discordId))
             {
                 Console.WriteLine("This user does not exist! Adding user now.");
+                var user = new User
+                {
+                    DiscordId = discordId,
+                    UserName = userName
+                };
                 await groceryAssistantRepository.AddNewUserAsync(user);
             }
         }

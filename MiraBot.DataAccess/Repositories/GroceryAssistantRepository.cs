@@ -52,11 +52,11 @@ namespace MiraBot.DataAccess.Repositories
             }
         }
 
-        public async Task<bool> UserExistsAsync(User user)
+        public async Task<bool> UserExistsAsync(ulong discordId)
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
-                return context.Users.Contains(user);
+                return await context.Users.AnyAsync(u => u.DiscordId == discordId);
             }
         }
 
@@ -79,7 +79,7 @@ namespace MiraBot.DataAccess.Repositories
 
         private async Task<User> GetUserByDiscordId(ulong discordId, MiraBotContext ctx)
         {
-            return ctx.Users.FirstOrDefault(u => u.DiscordId == discordId);
+            return await ctx.Users.FirstOrDefaultAsync(u => u.DiscordId == discordId);
         }
 
         public async Task<List<Meal>> GetAllMealsAsync(ulong discordId)

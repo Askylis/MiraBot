@@ -39,6 +39,7 @@ builder.Services.AddTransient<IGroceryAssistantRepository, GroceryAssistantRepos
 builder.Services.AddTransient<MiramindersRepository>();
 builder.Services.AddTransient<GroceryAssistantComponents>();
 builder.Services.AddTransient<GroceryAssistant>();
+builder.Services.AddTransient<Miraminder>();
 
 using (var host = builder.Build())
 {
