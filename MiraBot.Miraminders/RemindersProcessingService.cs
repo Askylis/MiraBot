@@ -61,7 +61,7 @@ namespace MiraBot.Miraminders
                 try
                 {
                     await dm.SendMessageAsync($"You have a reminder from {owner.UserName}! The message attached to this reminder is: \"{reminder.Message}\"");
-                    await ownerDm.SendMessageAsync($"I just sent your reminder to {recipient.Username}!");
+                    await ownerDm.SendMessageAsync($"I just sent your reminder to {recipient.Username}! Your reminder contained the following message: \"{reminder.Message}\"");
                 }
                 catch
                 {

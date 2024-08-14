@@ -57,13 +57,19 @@ namespace MiraBot.Miraminders
         public bool IsValidTimezone(string timezoneId)
         {
             var timezones = TimeZoneInfo.GetSystemTimeZones();
-            return timezones.Any(tz => tz.DisplayName.Equals(timezoneId, StringComparison.OrdinalIgnoreCase));
+            return timezones.Any(tz => tz.Id.Equals(timezoneId, StringComparison.OrdinalIgnoreCase));
         }
 
 
-        public async Task AddTimezoneToUser(ulong discordId, string timezoneId)
+        public async Task AddTimezoneToUserAsync(ulong discordId, string timezoneId)
         {
             await _repository.AddTimezoneToUser(discordId, timezoneId);
+        }
+
+        public async Task<string?> GetUserTimezoneAsync(ulong discordId)
+        {
+            var user = await _repository.GetUserByDiscordIdAsync(discordId);
+            return user.Timezone;
         }
 
         public void BuildTimezoneFile(string filePath)
@@ -73,7 +79,7 @@ namespace MiraBot.Miraminders
             {
                 foreach (var timeZone in timeZones)
                 {
-                    writer.Write($"{timeZone}\n");
+                    writer.Write($"{timeZone.Id}\n");
                 }
             }
         }

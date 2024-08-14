@@ -15,7 +15,7 @@ public partial class User
 
     public string? Nickname { get; set; }
 
-    public virtual Ingredient? Ingredient { get; set; }
+    public virtual ICollection<Ingredient> Ingredients { get; set; } = new List<Ingredient>();
 
     public virtual ICollection<Meal> Meals { get; set; } = new List<Meal>();
 

@@ -6,20 +6,19 @@ namespace MiraBot.DataAccess;
 
 public partial class MiraBotContext : DbContext
 {
-    private readonly string _connectionString;
+        private readonly string _connectionString;
 
-    public MiraBotContext(string connectionString)
-    {
-        _connectionString = connectionString;
-    }
+        public MiraBotContext(string connectionString)
+        {
+            _connectionString = connectionString;
+        }
 
-    public MiraBotContext(DbContextOptions<MiraBotContext> options)
-        : base(options)
-    {
-    }
+        public MiraBotContext(DbContextOptions<MiraBotContext> options)
+            : base(options)
+        {
+        }
 
-
-    public virtual DbSet<Ingredient> Ingredients { get; set; }
+        public virtual DbSet<Ingredient> Ingredients { get; set; }
 
     public virtual DbSet<Meal> Meals { get; set; }
 
@@ -38,13 +37,12 @@ public partial class MiraBotContext : DbContext
     {
         modelBuilder.Entity<Ingredient>(entity =>
         {
-            entity.Property(e => e.IngredientId).ValueGeneratedOnAdd();
             entity.Property(e => e.Name)
                 .HasMaxLength(50)
                 .IsUnicode(false);
 
-            entity.HasOne(d => d.IngredientNavigation).WithOne(p => p.Ingredient)
-                .HasForeignKey<Ingredient>(d => d.IngredientId)
+            entity.HasOne(d => d.Owner).WithMany(p => p.Ingredients)
+                .HasForeignKey(d => d.OwnerId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Ingredients_Users");
         });
@@ -137,9 +135,9 @@ public partial class MiraBotContext : DbContext
                 .HasMaxLength(32)
                 .IsUnicode(false);
             entity.Property(e => e.DiscordId)
-            .HasConversion(
-                v => (long)v,
-                v => (ulong)v);
+    .           HasConversion(
+                    v => (long)v,
+                    v => (ulong)v);
 
             entity.HasMany(d => d.Permissions).WithMany(p => p.Users)
                 .UsingEntity<Dictionary<string, object>>(

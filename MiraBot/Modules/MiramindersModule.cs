@@ -2,6 +2,7 @@
 using Discord;
 using Fergun.Interactive;
 using MiraBot.Miraminders;
+using System.Reflection.Metadata.Ecma335;
 
 namespace MiraBot.Modules
 {
@@ -20,46 +21,52 @@ namespace MiraBot.Modules
         }
 
 
-        [SlashCommand("remindme", "Set a reminder for yourself. ")]
-        public async Task AddReminderAsync(string reminderMessage, int days = 0, int hours = 0, int minutes = 0)
+        [SlashCommand("remind", "Set a reminder. Recipient name is optional. Press tab to see all reminder options.")]
+        public async Task SendReminderAsync(string reminderMessage, string? recipientName = null, int days = 0, int hours = 0, int minutes = 0)
         {
             await RespondAsync("Working on it...");
             if (!await _reminder.UserExistsAsync(Context.User.Id))
             {
                 await _reminder.AddNewUserAsync(Context.User.Username, Context.User.Id);
             }
-            if (await _reminder.UserTimeZone(Context.User.Id) is null)
+            if (await _reminder.GetUserTimezoneAsync(Context.User.Id) is null)
             {
-                await ReplyAsync("You don't have a timezone registered!");
-                await GetUserTimeZoneAsync();
+                await ReplyAsync("I don't have a timezone saved for you! Let's fix that.");
+                await SaveUserTimezoneAsync();
             }
             var reminderDateTime = DateTime.UtcNow + TimeSpan.FromDays(days) + TimeSpan.FromHours(hours) + TimeSpan.FromMinutes(minutes);
-            await _cache.AddReminderAsync(Context.User.Id, Context.User.Id, reminderMessage, reminderDateTime);
-            await ReplyAsync($"Got it! Saved this reminder!");
-        }
-
-        [SlashCommand("sendreminder", "Send a reminder to another previously registered user.")]
-        public async Task SendReminderToOtherUserAsync(string reminderMessage, string recipientName, int days = 0, int hours = 0, int minutes = 0)
-        {
-            await RespondAsync("Working on it...");
-            if (!await _reminder.UserExistsAsync(Context.User.Id))
+            if (recipientName is null)
             {
-                await _reminder.AddNewUserAsync(Context.User.Username, Context.User.Id);
-            }
-            var recipient = await _reminder.GetUserByNameAsync(recipientName);
-            if (recipient is null)
-            {
-                await ReplyAsync($"\"{recipientName}\" doesn't exist in my database! Make sure you spelled their username right (not their display name), and make sure they've talked to me before!");
+                await ReplyAsync("Got it! Saved this reminder!");
+                await _cache.AddReminderAsync(Context.User.Id, Context.User.Id, reminderMessage, reminderDateTime);
             }
             else
             {
-                var reminderDateTime = DateTime.UtcNow + TimeSpan.FromDays(days) + TimeSpan.FromHours(hours) + TimeSpan.FromMinutes(minutes);
+                var recipient = await _reminder.GetUserByNameAsync(recipientName);
+                if (recipient is null)
+                {
+                    await ReplyAsync($"\"{recipientName}\" doesn't exist in my database! Make sure you spelled their username right (not their display name), and make sure they've talked to me before!");
+                    return;
+                }
                 await _cache.AddReminderAsync(Context.User.Id, recipient.DiscordId, reminderMessage, reminderDateTime);
                 await ReplyAsync($"Saved this reminder! I'll make sure to send it to {recipientName}.");
             }
         }
 
-        public async Task GetUserTimeZoneAsync()
+        [SlashCommand("reminddaily", "Set a daily recurring reminder. Press tab to see all reminder options.")]
+        public async Task SetRecurringDailyReminderAsync(string reminderMessage, string time, string? recipientName = null)
+        {
+            //need to convert time variable to a TimeOnly object
+            await RespondAsync("Working on it...");
+            if (!await _reminder.UserExistsAsync(Context.User.Id))
+            {
+                await _reminder.AddNewUserAsync(Context.User.Username, Context.User.Id);
+            }
+            var userTimezone = await GetUserTimezoneAsync();
+        }
+
+
+        public async Task SaveUserTimezoneAsync()
         {
             bool isValid = false;
             await SendTimezoneFileAsync();
@@ -80,17 +87,19 @@ namespace MiraBot.Modules
                 else
                 {
                     await ReplyAsync($"{timezone} is valid!");
-                    await _reminder.AddTimezoneToUser(Context.User.Id, timezone);
+                    await _reminder.AddTimezoneToUserAsync(Context.User.Id, timezone);
                     isValid = true;
                 }
             }
         }
 
-
-
-        public async Task SetRecurringReminderAsync(int dayOfMonth)
+        [SlashCommand("test", "quick timezone test")]
+        public async Task<string> GetUserTimezoneAsync()
         {
-            var currentDate = DateTime.UtcNow;
+            var timezone = await _reminder.GetUserTimezoneAsync(Context.User.Id);
+            TimeZoneInfo.FindSystemTimeZoneById(timezone);
+            await ReplyAsync($"Your timezone is {timezone}!");
+            return timezone;
         }
 
 

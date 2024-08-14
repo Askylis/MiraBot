@@ -6,7 +6,7 @@ namespace MiraBot.Miraminders
     public class RemindersCache
     {
         private List<Reminder> cache;
-        private List<Reminder>? remindersToSend = new();
+        private List<Reminder> remindersToSend = new();
         private readonly MiramindersRepository _repository;
         public RemindersCache(MiramindersRepository repository)
         {
@@ -60,6 +60,7 @@ namespace MiraBot.Miraminders
 
             cache.Add(reminder);
             await _repository.AddReminderAsync(reminder);
+            Console.WriteLine($"Reminder added by {owner.UserName}! There are now {cache.Count} active reminders.");
         }
 
     }
