@@ -3,65 +3,42 @@ using MiraBot.DataAccess.Repositories;
 
 namespace MiraBot.Miraminders
 {
-    public class RemindersCache
+    public class RemindersCache : IRemindersCache
     {
-        private List<Reminder> cache;
-        private List<Reminder> remindersToSend = new();
-        private readonly MiramindersRepository _repository;
-        public RemindersCache(MiramindersRepository repository)
+        private readonly List<Reminder> _cache = new();
+
+        private readonly IMiramindersRepository _repository;
+
+        public RemindersCache(IMiramindersRepository repository)
         {
-            _repository = repository;
+            this._repository = repository;
         }
 
-        public async Task RefreshCache()
+        public async Task RefreshCacheAsync()
         {
-            List<Reminder> allReminders;
-            if (cache is not null)
-            {
-                cache.Clear();
-            }
-            allReminders = await _repository.GetRemindersAsync();
-            var reminders = allReminders.Where(r => !r.IsCompleted).ToList();
+            _cache.Clear();
+
+            var reminders = await _repository.GetUpcomingRemindersAsync();
             Console.WriteLine($"Number of active reminders: {reminders.Count}");
-            cache = reminders.ToList();
+
+            _cache.AddRange(reminders);
         }
 
-        public async Task<List<Reminder>?> GetActiveReminder()
+        public Reminder? GetNextDueReminder()
         {
-            if (cache is not null)
+            var reminder = _cache
+                .OrderBy(r => r.DateTime)
+                .FirstOrDefault(r => r.DateTime >  DateTime.UtcNow);
+
+            if (reminder is null )
             {
-                foreach (var reminder in cache)
-                {
-                    if (!reminder.IsCompleted && reminder.DateTime < DateTime.UtcNow)
-                    {
-                        remindersToSend.Add(reminder);
-                        await _repository.MarkCompletedAsync(reminder);
-                    }
-                }
+                return null;
             }
-            return remindersToSend;
+
+            _cache.Remove(reminder);
+            _repository.MarkCompletedAsync(reminder.ReminderId);
+
+            return reminder;
         }
-
-        public async Task AddReminderAsync(ulong ownerDiscordId, ulong recipientDiscordId, string message, DateTime dateTime)
-        {
-            var owner = await _repository.GetUserByDiscordIdAsync(ownerDiscordId);
-            var recipient = ownerDiscordId != recipientDiscordId
-                ? await _repository.GetUserByDiscordIdAsync(recipientDiscordId)
-                : owner;
-
-            var reminder = new Reminder
-            {
-                OwnerId = owner.UserId,
-                RecipientId = recipient.UserId,
-                Message = message,
-                DateTime = dateTime,
-                IsCompleted = false
-            };
-
-            cache.Add(reminder);
-            await _repository.AddReminderAsync(reminder);
-            Console.WriteLine($"Reminder added by {owner.UserName}! There are now {cache.Count} active reminders.");
-        }
-
     }
 }

@@ -1,9 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using MiraBot.DataAccess.Exceptions;
 
 namespace MiraBot.DataAccess.Repositories
 {
-    public class MiramindersRepository
+    public class MiramindersRepository : IMiramindersRepository
     {
         private readonly DatabaseOptions _databaseOptions;
 
@@ -16,8 +17,10 @@ namespace MiraBot.DataAccess.Repositories
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
-                context.Reminders.Add(reminder);
-                await context.SaveChangesAsync();
+                await context.Reminders.AddAsync(reminder)
+                    .ConfigureAwait(false);
+                await context.SaveChangesAsync()
+                    .ConfigureAwait(false);
             }
         }
 
@@ -25,83 +28,108 @@ namespace MiraBot.DataAccess.Repositories
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
-                await context.Users.AddAsync(user);
-                await context.SaveChangesAsync();
+                await context.Users.AddAsync(user)
+                    .ConfigureAwait(false);
+                await context.SaveChangesAsync()
+                    .ConfigureAwait(false);
             }
         }
 
-        public async Task<List<Reminder>> GetRemindersAsync()
+        public async Task<List<Reminder>> GetAllRemindersAsync()
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
-                return await context.Reminders.ToListAsync();
+                return await context.Reminders.ToListAsync()
+                    .ConfigureAwait(false);
             }
         }
 
-        public async Task MarkCompletedAsync(Reminder completed)
+        public async Task MarkCompletedAsync(int reminderId)
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
-                var reminder = await context.Reminders.FirstOrDefaultAsync(r => r.ReminderId == completed.ReminderId);
+                var reminder = await context.Reminders.FirstOrDefaultAsync(r => r.ReminderId == reminderId)
+                    .ConfigureAwait(false)
+                    ?? throw new ReminderNotFoundException();
+
                 reminder.IsCompleted = true;
-                await context.SaveChangesAsync();
+                await context.SaveChangesAsync()
+                    .ConfigureAwait(false);
             }
         }
 
-        public async Task<User> GetUserByNameAsync(string userName)
+        public async Task<User?> GetUserByNameAsync(string userName)
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
-                return await context.Users.FirstOrDefaultAsync(u => u.UserName == userName);
+                return await context.Users.FirstOrDefaultAsync(u => u.UserName == userName)
+                    .ConfigureAwait(false);
             }
         }
 
-        public async Task<User> GetUserByDiscordIdAsync(ulong discordId)
+        public async Task<User?> GetUserByDiscordIdAsync(ulong discordId)
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
-                return await GetUserByDiscordIdAsync(discordId, context);
+                return await GetUserByDiscordIdAsync(discordId, context)
+                    .ConfigureAwait(false);
             }
         }
 
-        private async Task<User> GetUserByDiscordIdAsync(ulong discordId, MiraBotContext ctx)
+        private static async Task<User?> GetUserByDiscordIdAsync(ulong discordId, MiraBotContext ctx)
         {
-            return await ctx.Users.FirstOrDefaultAsync(u => u.DiscordId == discordId);
+            return await ctx.Users.FirstOrDefaultAsync(u => u.DiscordId == discordId)
+                .ConfigureAwait(false);
         }
 
-        public async Task<User> GetUserByUserId(int userId)
-        {
-            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
-            {
-                return await context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
-            }
-        }
-
-        public async Task<string?> GetUserTimeZone(ulong discordId)
+        public async Task<User?> GetUserByUserId(int userId)
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
-                var user = await context.Users.Where(u => u.DiscordId == discordId).FirstOrDefaultAsync();
-                return user?.Timezone;
+                return await context.Users.FirstOrDefaultAsync(u => u.UserId == userId)
+                    .ConfigureAwait(false);
             }
         }
 
-        public async Task<bool> UserExistsAsync(ulong discordId)
+        public async Task<List<Reminder>> GetUpcomingRemindersAsync()
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
-                return await context.Users.AnyAsync(u => u.DiscordId == discordId);
+                return await context
+                    .Reminders
+                    .Where(r => !r.IsCompleted)
+                    .ToListAsync()
+                    .ConfigureAwait(false);
             }
         }
 
-        public async Task AddTimezoneToUser(ulong discordId, string timezoneId)
+        public async Task<User?> GetUserByUserIdAsync(int userId)
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
-                var user = await GetUserByDiscordIdAsync(discordId, context);
-                user.Timezone = timezoneId;
-                await context.SaveChangesAsync();
+                return await context
+                    .Users
+                    .FindAsync(userId)
+                    .ConfigureAwait(false);
             }
+        }
+
+        public async Task ModifyUserAsync(User user)
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                var dbUser = context.Users.Find(user.UserId);
+                if (dbUser is null)
+                {
+                    return;
+                }
+
+                context.Entry(dbUser).CurrentValues.SetValues(user);
+
+                await context
+                    .SaveChangesAsync()
+                    .ConfigureAwait(false);
+            }    
         }
     }
 }
