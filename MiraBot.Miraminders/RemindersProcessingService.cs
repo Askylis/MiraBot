@@ -38,7 +38,6 @@ namespace MiraBot.Miraminders
                 if (refreshCounter >= 600)
                 {
                     await _cache.RefreshCacheAsync();
-                    Console.WriteLine("Refreshed cache!");
                     refreshCounter = 0;
                 }
 
