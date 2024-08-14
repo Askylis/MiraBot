@@ -36,10 +36,11 @@ builder.Services.AddHostedService<RemindersProcessingService>();
 builder.Services.Configure<DiscordOptions>(config.GetSection("Discord"));
 builder.Services.Configure<DatabaseOptions>(config.GetSection("Database"));
 builder.Services.AddTransient<IGroceryAssistantRepository, GroceryAssistantRepository>();
-builder.Services.AddTransient<MiramindersRepository>();
+builder.Services.AddTransient<IMiramindersRepository, MiramindersRepository>();
+builder.Services.AddSingleton<IRemindersCache, RemindersCache>();
 builder.Services.AddTransient<GroceryAssistantComponents>();
 builder.Services.AddTransient<GroceryAssistant>();
-builder.Services.AddTransient<Miraminder>();
+builder.Services.AddTransient<MiraminderService>();
 
 using (var host = builder.Build())
 {
