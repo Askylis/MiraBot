@@ -1,4 +1,5 @@
-﻿using MiraBot.DataAccess;
+﻿using Microsoft.Extensions.Logging;
+using MiraBot.DataAccess;
 using MiraBot.DataAccess.Repositories;
 
 namespace MiraBot.Miraminders
@@ -6,10 +7,12 @@ namespace MiraBot.Miraminders
     public class MiraminderService
     {
         private readonly IMiramindersRepository _repository;
+        private readonly ILogger<MiraminderService> _logger;
 
-        public MiraminderService(IMiramindersRepository repository)
+        public MiraminderService(IMiramindersRepository repository, ILogger<MiraminderService> logger)
         {
             _repository = repository;
+            _logger = logger;
         }
 
         public async Task<string?> GetUserTimeZoneAsync(ulong discordId)
@@ -74,7 +77,7 @@ namespace MiraBot.Miraminders
             };
 
             await _repository.AddReminderAsync(reminder);
-            Console.WriteLine($"Reminder added by {owner.UserName}!");
+            _logger.LogDebug("Reminder added by {OwnerUserName}!", owner.UserName);
         }
 
         public async Task AddTimezoneToUserAsync(ulong discordId, string timezoneId)

@@ -1,4 +1,5 @@
-﻿using MiraBot.DataAccess;
+﻿using Microsoft.Extensions.Logging;
+using MiraBot.DataAccess;
 using MiraBot.DataAccess.Repositories;
 
 namespace MiraBot.Miraminders
@@ -8,18 +9,21 @@ namespace MiraBot.Miraminders
         private readonly List<Reminder> _cache = new();
 
         private readonly IMiramindersRepository _repository;
+        private readonly ILogger<RemindersCache> _logger;
 
-        public RemindersCache(IMiramindersRepository repository)
+        public RemindersCache(IMiramindersRepository repository, ILogger<RemindersCache> logger)
         {
             _repository = repository;
+            _logger = logger;
         }
 
         public async Task RefreshCacheAsync()
         {
+            _logger.LogInformation("Refreshing Reminders Cache");
             _cache.Clear();
 
             var reminders = await _repository.GetUpcomingRemindersAsync();
-            Console.WriteLine($"Number of active reminders: {reminders.Count}");
+            _logger.LogDebug("Number of active reminders: {remindersCount}", reminders.Count);
 
             _cache.AddRange(reminders);
         }
