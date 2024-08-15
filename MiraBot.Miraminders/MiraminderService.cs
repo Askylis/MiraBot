@@ -55,7 +55,7 @@ namespace MiraBot.Miraminders
                 .Any(t => t.Id.Equals(timezoneId, StringComparison.OrdinalIgnoreCase));
         }
 
-        public async Task AddReminderAsync(ulong ownerDiscordId, ulong recipientDiscordId, string message, DateTime dateTime)
+        public async Task AddReminderAsync(ulong ownerDiscordId, ulong recipientDiscordId, string message, DateTime dateTime, bool isRecurring)
         {
             var owner = await _repository.GetUserByDiscordIdAsync(ownerDiscordId);
             var recipient = ownerDiscordId != recipientDiscordId
@@ -73,12 +73,39 @@ namespace MiraBot.Miraminders
                 RecipientId = recipient.UserId,
                 Message = message,
                 DateTime = dateTime,
-                IsCompleted = false
+                IsCompleted = false,
+                IsRecurring = isRecurring
             };
 
             await _repository.AddReminderAsync(reminder);
             _logger.LogDebug("Reminder added by {OwnerUserName}!", owner.UserName);
         }
+
+        public async Task UpdateRecurringReminderAsync(Reminder reminder)
+        {
+            var newDateTime = reminder.DateTime.AddDays(1);
+            reminder.DateTime = newDateTime;
+            reminder.IsCompleted = false;
+            await _repository.UpdateReminderAsync(reminder);
+        }
+
+
+        public DateTime ConvertUserTimeToUtc(TimeOnly requestedTime, string userTimezoneId)
+        {
+            var userTimezone = TimeZoneInfo.FindSystemTimeZoneById(userTimezoneId);
+            var dateTime = DateTime.Today.Add(requestedTime.ToTimeSpan());
+            var utcTime = TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(dateTime, DateTimeKind.Unspecified), userTimezone);
+            return utcTime;
+        }
+
+        public DateTime ConvertUtcToUserTime(TimeOnly utcTime, string userTimezoneId)
+        {
+            var userTimezone = TimeZoneInfo.FindSystemTimeZoneById(userTimezoneId);
+            var utcDateTime = DateTime.Today.Add(utcTime.ToTimeSpan());
+            var userTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utcDateTime, DateTimeKind.Unspecified), userTimezone);
+            return userTime;
+        }
+
 
         public async Task AddTimezoneToUserAsync(ulong discordId, string timezoneId)
         {

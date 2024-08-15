@@ -6,19 +6,20 @@ namespace MiraBot.DataAccess;
 
 public partial class MiraBotContext : DbContext
 {
-        private readonly string _connectionString;
+    private readonly string _connectionString;
 
-        public MiraBotContext(string connectionString)
-        {
-            _connectionString = connectionString;
-        }
+    public MiraBotContext(string connectionString)
+    {
+        _connectionString = connectionString;
+    }
 
-        public MiraBotContext(DbContextOptions<MiraBotContext> options)
-            : base(options)
-        {
-        }
+    public MiraBotContext(DbContextOptions<MiraBotContext> options)
+        : base(options)
+    {
+    }
 
-        public virtual DbSet<Ingredient> Ingredients { get; set; }
+
+    public virtual DbSet<Ingredient> Ingredients { get; set; }
 
     public virtual DbSet<Meal> Meals { get; set; }
 
@@ -67,7 +68,6 @@ public partial class MiraBotContext : DbContext
                         .HasConstraintName("FK_IngredientsInMeals_Ingredients"),
                     l => l.HasOne<Meal>().WithMany()
                         .HasForeignKey("MealId")
-                        .OnDelete(DeleteBehavior.Cascade)
                         .HasConstraintName("FK_IngredientsInMeals_IngredientsInMeals"),
                     j =>
                     {
@@ -135,7 +135,7 @@ public partial class MiraBotContext : DbContext
                 .HasMaxLength(32)
                 .IsUnicode(false);
             entity.Property(e => e.DiscordId)
-    .           HasConversion(
+                .HasConversion(
                     v => (long)v,
                     v => (ulong)v);
 

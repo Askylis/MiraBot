@@ -19,5 +19,7 @@
         Task ModifyUserAsync(User user);
 
         Task<User?> GetUserByUserIdAsync(int userId);
+        Task UpdateReminderAsync(Reminder reminder);
+        Task DeleteReminderAsync(Reminder reminder);
     }
 }

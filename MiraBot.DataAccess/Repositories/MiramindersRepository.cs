@@ -24,6 +24,31 @@ namespace MiraBot.DataAccess.Repositories
             }
         }
 
+        public async Task UpdateReminderAsync(Reminder reminder)
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                var original = await context.Reminders.FirstOrDefaultAsync(r => r.ReminderId == reminder.ReminderId)
+                    .ConfigureAwait(false);
+                original.DateTime = reminder.DateTime;
+                original.IsCompleted = reminder.IsCompleted;
+                await context.SaveChangesAsync()
+                    .ConfigureAwait(false);
+            }
+        }
+
+        public async Task DeleteReminderAsync(Reminder reminder)
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                var original = await context.Reminders.FirstOrDefaultAsync(r => r.ReminderId == reminder.ReminderId)
+                    .ConfigureAwait(false);
+                context.Reminders.Remove(original);
+                await context.SaveChangesAsync()
+                    .ConfigureAwait(false);
+            }
+        }
+
         public async Task AddNewUserAsync(User user)
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))

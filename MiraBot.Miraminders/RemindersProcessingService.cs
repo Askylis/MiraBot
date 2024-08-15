@@ -32,6 +32,10 @@ namespace MiraBot.Miraminders
                 if (reminder is not null)
                 {
                     await SendReminderAsync(reminder);
+                    if (reminder.IsRecurring)
+                    {
+                        await _reminderService.UpdateRecurringReminderAsync(reminder);
+                    }
                 }
 
                 refreshCounter++;

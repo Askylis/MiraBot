@@ -32,7 +32,7 @@ namespace MiraBot.Miraminders
         {
             var reminder = _cache
                 .OrderBy(r => r.DateTime)
-                .FirstOrDefault(r => r.DateTime >  DateTime.UtcNow);
+                .FirstOrDefault(r => r.DateTime <  DateTime.UtcNow);
 
             if (reminder is null )
             {

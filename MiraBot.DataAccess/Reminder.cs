@@ -17,5 +17,7 @@ public partial class Reminder
 
     public DateTime DateTime { get; set; }
 
+    public bool IsRecurring { get; set; }
+
     public virtual ICollection<User> Users { get; set; } = new List<User>();
 }
