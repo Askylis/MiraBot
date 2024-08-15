@@ -1,4 +1,5 @@
-﻿using MiraBot.DataAccess;
+﻿using Microsoft.Extensions.Logging;
+using MiraBot.DataAccess;
 using MiraBot.DataAccess.Repositories;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -9,9 +10,14 @@ namespace MiraBot.GroceryAssistance
     {
         private readonly IGroceryAssistantRepository groceryAssistantRepository;
 
-        public GroceryAssistant(IGroceryAssistantRepository groceryAssistantRepository)
+        private readonly ILogger<GroceryAssistant> _logger;
+
+        public GroceryAssistant(
+            IGroceryAssistantRepository groceryAssistantRepository,
+            ILogger<GroceryAssistant> logger)
         {
             this.groceryAssistantRepository = groceryAssistantRepository;
+            _logger = logger;
         }
 
         public async Task AddMealAsync(string mealName, List<string> ingredients, ulong discordId, DateOnly? date = null)
@@ -33,7 +39,7 @@ namespace MiraBot.GroceryAssistance
         {
             if (!await groceryAssistantRepository.UserExistsAsync(discordId))
             {
-                Console.WriteLine("This user does not exist! Adding user now.");
+                _logger.LogTrace("This user does not exist! Adding user now.");
                 var user = new User
                 {
                     DiscordId = discordId,
