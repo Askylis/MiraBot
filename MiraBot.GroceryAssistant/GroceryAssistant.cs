@@ -39,7 +39,7 @@ namespace MiraBot.GroceryAssistance
         {
             if (!await groceryAssistantRepository.UserExistsAsync(discordId))
             {
-                _logger.LogDebug("This user does not exist! Adding user now.");
+                _logger.LogTrace("This user does not exist! Adding user now.");
                 var user = new User
                 {
                     DiscordId = discordId,
