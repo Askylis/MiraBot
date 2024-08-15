@@ -61,15 +61,18 @@ namespace MiraBot.Modules
         }
 
         [SlashCommand("reminddaily", "Set a daily recurring reminder. Press tab to see all reminder options.")]
-        public async Task SetRecurringDailyReminderAsync(string reminderMessage, string time, string? recipientName = null)
+        public async Task SetRecurringDailyReminderAsync(string reminderMessage, string timeInput, string? recipientName = null)
         {
-            //need to convert time variable to a TimeOnly object
+            TimeOnly specifiedTime;
             await RespondAsync("Working on it...");
             await _reminderService.EnsureUserExistsAsync(Context.User.Id, Context.User.Username);
-
-            // Commented this out as you shouldn't be calling a command method yourself
-            // but I'm not sure where you were going with this
-            // var userTimezone = await GetUserTimezoneAsync();
+            if (! TimeOnly.TryParse(timeInput, out specifiedTime))
+            {
+                await ReplyAsync("Your time input isn't valid. Make sure that it's formatted as: HH:MM AM/PM.");
+                return;
+            }
+            await ReplyAsync($"Your requested time is: {specifiedTime}");
+            var userTimezone = await GetUserTimezoneAsync();
         }
 
 
@@ -104,19 +107,19 @@ namespace MiraBot.Modules
             }
         }
 
-        [SlashCommand("test", "quick timezone test")]
-        public async Task GetUserTimezoneAsync()
+        public async Task<string> GetUserTimezoneAsync()
         {
             var user = await _reminderService.EnsureUserExistsAsync(Context.User.Id, Context.User.Username);
 
             if (user.Timezone is null)
             {
                 await ReplyAsync("Your time zone is not set.");
-                return;
+                await SaveUserTimezoneAsync();
             }
 
             TimeZoneInfo.FindSystemTimeZoneById(user.Timezone);
             await ReplyAsync($"Your timezone is {user.Timezone}!");
+            return user.Timezone;
         }
 
 

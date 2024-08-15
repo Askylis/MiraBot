@@ -5,16 +5,16 @@ namespace MiraBot.Miraminders
 {
     public class MiraminderService
     {
-        private readonly IMiramindersRepository repository;
+        private readonly IMiramindersRepository _repository;
 
         public MiraminderService(IMiramindersRepository repository)
         {
-            this.repository = repository;
+            _repository = repository;
         }
 
         public async Task<string?> GetUserTimeZoneAsync(ulong discordId)
         {
-            var user = await repository.GetUserByDiscordIdAsync(discordId)
+            var user = await _repository.GetUserByDiscordIdAsync(discordId)
                 .ConfigureAwait(false);
 
             return user?.Timezone;
@@ -22,26 +22,26 @@ namespace MiraBot.Miraminders
 
         public async Task<User?> GetUserAsync(int userId)
         {
-            return await repository.GetUserByUserIdAsync(userId)
+            return await _repository.GetUserByUserIdAsync(userId)
                 .ConfigureAwait(false);
         }
 
         public async Task<User> EnsureUserExistsAsync(ulong discordId, string username)
         {
-            var user = await repository.GetUserByDiscordIdAsync(discordId);
+            var user = await _repository.GetUserByDiscordIdAsync(discordId);
             if (user is not null)
             {
                 return user;
             }
 
             var newUser = new User { DiscordId = discordId, UserName = username };
-            await repository.AddNewUserAsync(newUser);
+            await _repository.AddNewUserAsync(newUser);
             return newUser;
         }
 
         public async Task<User?> GetUserByNameAsync(string userName)
         {
-            return await repository.GetUserByNameAsync(userName)
+            return await _repository.GetUserByNameAsync(userName)
                 .ConfigureAwait(false);
         }
 
@@ -54,9 +54,9 @@ namespace MiraBot.Miraminders
 
         public async Task AddReminderAsync(ulong ownerDiscordId, ulong recipientDiscordId, string message, DateTime dateTime)
         {
-            var owner = await repository.GetUserByDiscordIdAsync(ownerDiscordId);
+            var owner = await _repository.GetUserByDiscordIdAsync(ownerDiscordId);
             var recipient = ownerDiscordId != recipientDiscordId
-                ? await repository.GetUserByDiscordIdAsync(recipientDiscordId)
+                ? await _repository.GetUserByDiscordIdAsync(recipientDiscordId)
                 : owner;
 
             if (owner is null || recipient is null)
@@ -73,19 +73,19 @@ namespace MiraBot.Miraminders
                 IsCompleted = false
             };
 
-            await repository.AddReminderAsync(reminder);
+            await _repository.AddReminderAsync(reminder);
             Console.WriteLine($"Reminder added by {owner.UserName}!");
         }
 
         public async Task AddTimezoneToUserAsync(ulong discordId, string timezoneId)
         {
-            var user = await repository.GetUserByDiscordIdAsync(discordId)
+            var user = await _repository.GetUserByDiscordIdAsync(discordId)
                 .ConfigureAwait(false);
 
             if (user is not null)
             {
                 user.Timezone = timezoneId;
-                await repository.ModifyUserAsync(user);
+                await _repository.ModifyUserAsync(user);
             }
         }
 

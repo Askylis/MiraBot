@@ -11,7 +11,7 @@ namespace MiraBot.Miraminders
 
         public RemindersCache(IMiramindersRepository repository)
         {
-            this._repository = repository;
+            _repository = repository;
         }
 
         public async Task RefreshCacheAsync()
