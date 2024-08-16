@@ -11,10 +11,10 @@ namespace MiraBot.Miraminders
         private readonly MiraminderService _reminderService;
 
         public RemindersProcessingService(
-            IRemindersCache cache, 
-            DiscordSocketClient client, 
-            MiraminderService reminder) 
-        { 
+            IRemindersCache cache,
+            DiscordSocketClient client,
+            MiraminderService reminder)
+        {
             _cache = cache;
             _client = client;
             _reminderService = reminder;
@@ -28,14 +28,19 @@ namespace MiraBot.Miraminders
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                var reminder = _cache.GetNextDueReminder();
-                if (reminder is not null)
+                var reminders = _cache.GetNextDueReminder();
+
+                if (reminders.Any())
                 {
-                    await SendReminderAsync(reminder);
-                    if (reminder.IsRecurring)
+                    foreach (var reminder in reminders)
                     {
-                        await _reminderService.UpdateRecurringReminderAsync(reminder);
+                        await SendReminderAsync(reminder);
+                        if (reminder.IsRecurring)
+                        {
+                            await _reminderService.UpdateRecurringReminderAsync(reminder);
+                        }
                     }
+                    await _cache.RefreshCacheAsync();
                 }
 
                 refreshCounter++;

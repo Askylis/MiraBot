@@ -6,6 +6,6 @@ namespace MiraBot.Miraminders
     {
         Task RefreshCacheAsync();
 
-        Reminder? GetNextDueReminder();
+        IEnumerable<Reminder> GetNextDueReminder();
     }
 }

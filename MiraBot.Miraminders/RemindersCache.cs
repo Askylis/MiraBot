@@ -6,7 +6,8 @@ namespace MiraBot.Miraminders
 {
     public class RemindersCache : IRemindersCache
     {
-        private readonly List<Reminder> _cache = new();
+        private static List<Reminder> _cache = new();
+        private static List<Reminder> _toDelete = new();
 
         private readonly IMiramindersRepository _repository;
         private readonly ILogger<RemindersCache> _logger;
@@ -20,29 +21,35 @@ namespace MiraBot.Miraminders
         public async Task RefreshCacheAsync()
         {
             _logger.LogInformation("Refreshing Reminders Cache");
+            // I made _toDelete and marked as completed here, because originally each reminder that was to be sent in GetNextDueReminder
+            // was being removed from cache and then marked completed, so they weren't actually ever being sent. 
+            foreach (var reminder in _toDelete)
+            {
+                await _repository.MarkCompletedAsync(reminder.ReminderId);
+            }
             _cache.Clear();
-
             var reminders = await _repository.GetUpcomingRemindersAsync();
             _logger.LogDebug("Number of active reminders: {remindersCount}", reminders.Count);
 
             _cache.AddRange(reminders);
+            Console.WriteLine($"There should be {reminders.Count} reminders in cache.");
         }
 
-        public Reminder? GetNextDueReminder()
+        public IEnumerable<Reminder> GetNextDueReminder()
         {
-            var reminder = _cache
-                .OrderBy(r => r.DateTime)
-                .FirstOrDefault(r => r.DateTime <  DateTime.UtcNow);
-
-            if (reminder is null )
+            var reminders = _cache
+                .Where(r => r.DateTime < DateTime.UtcNow)
+                .OrderBy(r => r.DateTime);
+                
+            if (reminders.Any())
             {
-                return null;
+                Console.WriteLine($"There are {reminders.Count()} reminders queued to be sent.");
+                foreach (var reminder in reminders)
+                {
+                    _toDelete.Add(reminder);
+                    yield return reminder;
+                }
             }
-
-            _cache.Remove(reminder);
-            _repository.MarkCompletedAsync(reminder.ReminderId);
-
-            return reminder;
         }
     }
 }

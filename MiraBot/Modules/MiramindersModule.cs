@@ -49,25 +49,17 @@ namespace MiraBot.Modules
             await ReplyAsync("Got it! Saved this reminder!");
         }
 
+        [SlashCommand("remindat", "Set a one time reminder for a specific time.")]
+        public async Task SetOneTimeReminderAsync(string reminderMessage, string timeInput, string? recipientName = null)
+        {
+            await OneTimeReminderAsync(reminderMessage, timeInput, recipientName, false);
+        }
+
         [SlashCommand("reminddaily", "Set a daily recurring reminder. Press tab to see all reminder options.")]
         public async Task SetDailyReminderAsync(string reminderMessage, string timeInput, string? recipientName = null)
         {
             // need to add check to make sure reminderMessage isn't over 250 characters long
-            TimeOnly requestedTime;
-            await RespondAsync("Working on it...");
-            await _reminderService.EnsureUserExistsAsync(Context.User.Id, Context.User.Username);
-            if (! TimeOnly.TryParse(timeInput, out requestedTime))
-            {
-                await ReplyAsync("Your time input isn't valid. Make sure that it's formatted as: HH:MM AM/PM. (AM/PM is optional, as you can use 24h time.)");
-                return;
-            }
-
-            var utcTime = _reminderService.ConvertUserTimeToUtc(requestedTime, await GetUserTimezoneAsync());
-            var recipientId = await GetRecipientAsync(recipientName);
-            await _reminderService.AddReminderAsync(Context.User.Id, recipientId, reminderMessage, utcTime, true);
-            await _cache.RefreshCacheAsync();
-
-            await ReplyAsync($"Got it! Saved this reminder!");
+            await OneTimeReminderAsync(reminderMessage, timeInput, recipientName, true);
         }
 
 
@@ -86,6 +78,25 @@ namespace MiraBot.Modules
             var timezone = await GetUserTimezoneAsync();
             var userTime = _reminderService.ConvertUtcToUserTime(time, timezone);
             await ReplyAsync($"Your input: {time} UTC translated to {userTime} {timezone}");
+        }
+
+        public async Task OneTimeReminderAsync(string message, string time, string? recipient, bool isRecurring)
+        {
+            TimeOnly requestedTime;
+            await RespondAsync("Working on it...");
+            await _reminderService.EnsureUserExistsAsync(Context.User.Id, Context.User.Username);
+            if (!TimeOnly.TryParse(time, out requestedTime))
+            {
+                await ReplyAsync("Your time input isn't valid. Make sure that it's formatted as: HH:MM AM/PM. (AM/PM is optional, as you can use 24h time.)");
+                return;
+            }
+
+            var utcTime = _reminderService.ConvertUserTimeToUtc(requestedTime, await GetUserTimezoneAsync());
+            var recipientId = await GetRecipientAsync(recipient);
+            await _reminderService.AddReminderAsync(Context.User.Id, recipientId, message, utcTime, isRecurring);
+            await _cache.RefreshCacheAsync();
+
+            await ReplyAsync($"Got it! Saved this reminder!");
         }
 
         public async Task<ulong> GetRecipientAsync(string? recipientName)

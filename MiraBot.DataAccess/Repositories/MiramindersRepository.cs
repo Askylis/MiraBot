@@ -120,11 +120,12 @@ namespace MiraBot.DataAccess.Repositories
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
-                return await context
+                var reminders =  await context
                     .Reminders
                     .Where(r => !r.IsCompleted)
                     .ToListAsync()
                     .ConfigureAwait(false);
+                return reminders;
             }
         }
 
