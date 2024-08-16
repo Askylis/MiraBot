@@ -1,3 +1,5 @@
+# MiraBot ![Unit Tests Status](https://github.com/Askylis/MiraBot/actions/workflows/unit-tests.yml/badge.svg)
+
 ## Introduction
 
 MiraBot is a Discord bot! She has a variety of commands that can be used in private messages and in servers, and has access to some simple tools that I've built. Her tools right now are very simple and largely intended as a way for me to practice and learn. 
