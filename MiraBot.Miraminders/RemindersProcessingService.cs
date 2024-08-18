@@ -32,14 +32,16 @@ namespace MiraBot.Miraminders
 
                 if (reminders.Any())
                 {
-                    foreach (var reminder in reminders)
-                    {
-                        await SendReminderAsync(reminder);
-                        if (reminder.IsRecurring)
+                    await Task.WhenAll(
+                        reminders.Select(async reminder =>
                         {
-                            await _reminderService.UpdateRecurringReminderAsync(reminder);
-                        }
-                    }
+                            await SendReminderAsync(reminder);
+                            if (reminder.IsRecurring)
+                            {
+                                await _reminderService.UpdateRecurringReminderAsync(reminder);
+                            }
+                        })
+                    );
                     await _cache.RefreshCacheAsync();
                 }
 
@@ -50,7 +52,7 @@ namespace MiraBot.Miraminders
                     refreshCounter = 0;
                 }
 
-                await Task.Delay(1000);
+                await Task.Delay(1000, CancellationToken.None);
             }
         }
 

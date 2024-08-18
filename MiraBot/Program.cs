@@ -11,6 +11,7 @@ using MiraBot.GroceryAssistance;
 using MiraBot.Miraminders;
 using Fergun.Interactive;
 using MiraBot.Modules;
+using MiraBot.Common;
 
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -30,6 +31,7 @@ builder.Services.AddSingleton(x =>
 builder.Services.AddSingleton(new InteractiveConfig { DefaultTimeout = TimeSpan.FromMinutes(5) });
 builder.Services.AddSingleton<InteractiveService>();
 builder.Services.AddSingleton<RemindersCache>();
+builder.Services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 builder.Services.AddHostedService<InteractionHandlingService>();
 builder.Services.AddHostedService<DiscordStartupService>();
 builder.Services.AddHostedService<RemindersProcessingService>();

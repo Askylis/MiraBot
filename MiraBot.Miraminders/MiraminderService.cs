@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using MiraBot.Common;
 using MiraBot.DataAccess;
 using MiraBot.DataAccess.Repositories;
 
@@ -8,11 +9,13 @@ namespace MiraBot.Miraminders
     {
         private readonly IMiramindersRepository _repository;
         private readonly ILogger<MiraminderService> _logger;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
-        public MiraminderService(IMiramindersRepository repository, ILogger<MiraminderService> logger)
+        public MiraminderService(IMiramindersRepository repository, ILogger<MiraminderService> logger, IDateTimeProvider dateTimeProvider)
         {
             _repository = repository;
             _logger = logger;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         public async Task<string?> GetUserTimeZoneAsync(ulong discordId)
@@ -93,7 +96,7 @@ namespace MiraBot.Miraminders
         public DateTime ConvertUserTimeToUtc(TimeOnly requestedTime, string userTimezoneId)
         {
             var userTimezone = TimeZoneInfo.FindSystemTimeZoneById(userTimezoneId);
-            var dateTime = DateTime.Today.Add(requestedTime.ToTimeSpan());
+            var dateTime = _dateTimeProvider.Today.Add(requestedTime.ToTimeSpan());
             var utcTime = TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(dateTime, DateTimeKind.Unspecified), userTimezone);
             return utcTime;
         }
@@ -101,7 +104,7 @@ namespace MiraBot.Miraminders
         public DateTime ConvertUtcToUserTime(TimeOnly utcTime, string userTimezoneId)
         {
             var userTimezone = TimeZoneInfo.FindSystemTimeZoneById(userTimezoneId);
-            var utcDateTime = DateTime.Today.Add(utcTime.ToTimeSpan());
+            var utcDateTime = _dateTimeProvider.Today.Add(utcTime.ToTimeSpan());
             var userTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utcDateTime, DateTimeKind.Unspecified), userTimezone);
             return userTime;
         }

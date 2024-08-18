@@ -1,8 +1,11 @@
+using Discord;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
+using MiraBot.Common;
 using MiraBot.DataAccess;
 using MiraBot.DataAccess.Repositories;
 using Moq;
+using System.Globalization;
 
 namespace MiraBot.Miraminders.UnitTests
 {
@@ -10,6 +13,7 @@ namespace MiraBot.Miraminders.UnitTests
     {
         private ILogger<MiraminderService> _logger;
         private Mock<IMiramindersRepository> _repository;
+        private Mock<IDateTimeProvider> _dateTimeProvider;
         private readonly ulong _discordId = 1;
 
         [SetUp]
@@ -17,6 +21,7 @@ namespace MiraBot.Miraminders.UnitTests
         {
             _logger = new Mock<ILogger<MiraminderService>>().Object;
             _repository = new Mock<IMiramindersRepository>();
+            _dateTimeProvider = new Mock<IDateTimeProvider>();
         }
 
         [Test]
@@ -26,7 +31,7 @@ namespace MiraBot.Miraminders.UnitTests
             // Arrange
             string timezone = "test";
             _repository.Setup(r => r.GetUserByDiscordIdAsync(_discordId)).ReturnsAsync(new User { DiscordId = _discordId, Timezone = timezone });
-            var service = new MiraminderService(_repository.Object, _logger);
+            var service = new MiraminderService(_repository.Object, _logger, _dateTimeProvider.Object);
 
             // Act
             var result = await service.GetUserTimeZoneAsync(_discordId);
@@ -42,7 +47,7 @@ namespace MiraBot.Miraminders.UnitTests
             // Arrange
             string? timezone = null;
             _repository.Setup(r => r.GetUserByDiscordIdAsync(_discordId)).ReturnsAsync(new User { DiscordId = _discordId, Timezone = timezone });
-            var service = new MiraminderService(_repository.Object, _logger);
+            var service = new MiraminderService(_repository.Object, _logger, _dateTimeProvider.Object);
 
             // Act
             var result = await service.GetUserTimeZoneAsync(_discordId);
@@ -58,7 +63,7 @@ namespace MiraBot.Miraminders.UnitTests
             var username = "test";
             var user = new User { DiscordId = _discordId };
             _repository.Setup(r => r.GetUserByDiscordIdAsync(_discordId)).ReturnsAsync(user);
-            var service = new MiraminderService(_repository.Object, _logger);
+            var service = new MiraminderService(_repository.Object, _logger, _dateTimeProvider.Object);
 
             // Act
             var result = await service.EnsureUserExistsAsync(_discordId, username);
@@ -71,7 +76,7 @@ namespace MiraBot.Miraminders.UnitTests
         public async Task EnsureUserExists_UserDoesNotExist_AddsNewUser()
         {
             // Arrange
-            var service = new MiraminderService(_repository.Object, _logger);
+            var service = new MiraminderService(_repository.Object, _logger, _dateTimeProvider.Object);
             var username = "test";
 
             // Act
@@ -86,7 +91,7 @@ namespace MiraBot.Miraminders.UnitTests
         public async Task AddReminder_OwnerAndRecipientAreSame_ReminderIsAdded()
         {
             // Arrange
-            var service = new MiraminderService(_repository.Object, _logger);
+            var service = new MiraminderService(_repository.Object, _logger, _dateTimeProvider.Object);
             var message = "test";
             var date = new DateTime(2024, 8, 15, 0, 0, 0, DateTimeKind.Utc);
             var user = new User { DiscordId = _discordId, UserId = 2 };
@@ -103,7 +108,7 @@ namespace MiraBot.Miraminders.UnitTests
         public async Task AddReminder_OwnerIsNull_ExceptionIsThrown()
         {
             // Arrange 
-            var service = new MiraminderService(_repository.Object, _logger);
+            var service = new MiraminderService(_repository.Object, _logger, _dateTimeProvider.Object);
             var message = "test";
             var date = new DateTime(2024, 8, 15, 0, 0, 0, DateTimeKind.Utc);
 
@@ -114,6 +119,79 @@ namespace MiraBot.Miraminders.UnitTests
             // Assert
             await action.Should().ThrowAsync<InvalidOperationException>();
             //Assert.ThrowsAsync<InvalidOperationException>(async () => await service.AddReminderAsync(_discordId, _discordId, message, date, false));
+        }
+
+        [Test]
+        public async Task AddReminder_OwnerAndRecipientAreDifferent_ReminderIsAdded()
+        {
+            // Arrange
+            var service = new MiraminderService(_repository.Object, _logger, _dateTimeProvider.Object);
+            var message = "test";
+            var date = new DateTime(2024, 8, 15, 0, 0, 0, DateTimeKind.Utc);
+            var user = new User { DiscordId = _discordId, UserId = 2 };
+            var recipient = new User { DiscordId = 2, UserId = 3 };
+            ulong recipientId = 2;
+
+            // Act
+            _repository.Setup(r => r.GetUserByDiscordIdAsync(_discordId)).ReturnsAsync(user);
+            _repository.Setup(r => r.GetUserByDiscordIdAsync(recipient.DiscordId)).ReturnsAsync(recipient);
+            await service.AddReminderAsync(_discordId, recipientId, message, date, false);
+
+            // Assert 
+            _repository.Verify(r => r.AddReminderAsync(It.Is<Reminder>(n => n.OwnerId == user.UserId && n.RecipientId == recipient.UserId && n.Message == message)), Times.Once());
+        }
+
+        [Test]
+        public async Task UpdateRecurringReminder_DateTimeIsDifferent_ReminderIsUpdated()
+        {
+            // Arrange
+            var service = new MiraminderService(_repository.Object, _logger, _dateTimeProvider.Object);
+            var originalDateTime = new DateTime(2024, 8, 15, 0, 0, 0, DateTimeKind.Utc);
+            var ownerId = 1;
+            var message = "test";
+            var reminder = new Reminder
+            {
+                OwnerId = ownerId,
+                RecipientId = ownerId,
+                IsRecurring = false,
+                IsCompleted = false,
+                Message = message,
+                DateTime = originalDateTime
+
+            };
+
+            // Act
+            await service.UpdateRecurringReminderAsync(reminder);
+
+            // Assert
+            _repository.Verify(r => r.UpdateReminderAsync(It.Is<Reminder>(r => r.DateTime == originalDateTime.AddDays(1))), Times.Once());
+            Assert.That(reminder.DateTime, Is.EqualTo(originalDateTime.AddDays(1)));
+        }
+
+        [Test]
+        [TestCase("19:00:00", "US Eastern Standard Time", "2024-08-17T23:00:00Z")]
+        [TestCase("19:00:00", "GMT Standard Time", "2024-08-17T18:00:00Z")]
+        public void ConvertUserTimeToUtc_TimezoneIsValid_ReturnsUtcTime(string userTime, string timezone, string expected)
+        {
+            // Arrange
+            var service = new MiraminderService(_repository.Object, _logger, _dateTimeProvider.Object);
+            _dateTimeProvider.SetupGet(d => d.Today).Returns(new DateTime(2024, 8, 17, 0, 0, 0, DateTimeKind.Local));
+
+            // Act
+            var result = service.ConvertUserTimeToUtc(TimeOnly.ParseExact(userTime, "HH:mm:ss", CultureInfo.InvariantCulture), timezone);
+
+            // Assert
+            Assert.That(result, Is.EqualTo(DateTime.Parse(expected, null, DateTimeStyles.RoundtripKind)));
+        }
+
+        [Test]
+        public void ConvertUtcToUserTime_TimezoneIsValid_ReturnsUserTime()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
         }
     }
 }

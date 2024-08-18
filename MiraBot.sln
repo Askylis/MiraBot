@@ -13,7 +13,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiraBot.Miraminders", "Mira
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Unit Tests", "Unit Tests", "{B3B5E222-3C27-48DB-AE87-DD18FEED4C95}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiraBot.Miraminders.UnitTests", "MiraBot.Miraminders.UnitTests\MiraBot.Miraminders.UnitTests.csproj", "{5C595A74-F869-448F-9D09-1E95EF2C024C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiraBot.Miraminders.UnitTests", "MiraBot.Miraminders.UnitTests\MiraBot.Miraminders.UnitTests.csproj", "{5C595A74-F869-448F-9D09-1E95EF2C024C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiraBot.Common", "MiraBot.Common\MiraBot.Common.csproj", "{E7477E03-E47D-41A6-9E40-E75BF9F57BDA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,6 +43,10 @@ Global
 		{5C595A74-F869-448F-9D09-1E95EF2C024C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5C595A74-F869-448F-9D09-1E95EF2C024C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5C595A74-F869-448F-9D09-1E95EF2C024C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E7477E03-E47D-41A6-9E40-E75BF9F57BDA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E7477E03-E47D-41A6-9E40-E75BF9F57BDA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E7477E03-E47D-41A6-9E40-E75BF9F57BDA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E7477E03-E47D-41A6-9E40-E75BF9F57BDA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

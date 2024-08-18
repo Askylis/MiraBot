@@ -21,18 +21,12 @@ namespace MiraBot.Miraminders
         public async Task RefreshCacheAsync()
         {
             _logger.LogInformation("Refreshing Reminders Cache");
-            // I made _toDelete and marked as completed here, because originally each reminder that was to be sent in GetNextDueReminder
-            // was being removed from cache and then marked completed, so they weren't actually ever being sent. 
-            foreach (var reminder in _toDelete)
-            {
-                await _repository.MarkCompletedAsync(reminder.ReminderId);
-            }
+            await Task.WhenAll(_toDelete.Where(d => !d.IsRecurring).Select(reminder => _repository.MarkCompletedAsync(reminder.ReminderId)));
+            _toDelete.Clear();
             _cache.Clear();
             var reminders = await _repository.GetUpcomingRemindersAsync();
             _logger.LogDebug("Number of active reminders: {remindersCount}", reminders.Count);
-
             _cache.AddRange(reminders);
-            Console.WriteLine($"There should be {reminders.Count} reminders in cache.");
         }
 
         public IEnumerable<Reminder> GetNextDueReminder()
@@ -43,7 +37,6 @@ namespace MiraBot.Miraminders
                 
             if (reminders.Any())
             {
-                Console.WriteLine($"There are {reminders.Count()} reminders queued to be sent.");
                 foreach (var reminder in reminders)
                 {
                     _toDelete.Add(reminder);
