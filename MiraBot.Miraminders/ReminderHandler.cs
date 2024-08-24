@@ -242,6 +242,7 @@ namespace MiraBot.Miraminders
                 }
                 index++;
             }
+            // I don't really remember why I have this separated out into an if-else statement...
             if (timeIndex > -1)
             {
                 completeInput[timeIndex] = $"{completeInput[timeIndex]}{completeInput[timeIndex + 1]}";
