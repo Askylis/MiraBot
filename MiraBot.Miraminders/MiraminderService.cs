@@ -86,12 +86,16 @@ namespace MiraBot.Miraminders
 
         public async Task UpdateRecurringReminderAsync(Reminder reminder)
         {
-            var newDateTime = reminder.DateTime.AddDays(1);
-            reminder.DateTime = newDateTime;
+            reminder.DateTime = reminder.DateTime.AddSeconds(reminder.InSeconds)
+                .AddMinutes(reminder.InMinutes)
+                .AddHours(reminder.InHours)
+                .AddDays(reminder.InDays)
+                .AddDays(reminder.InDays * 7)
+                .AddMonths(reminder.InMonths)
+                .AddYears(reminder.InYears);
             reminder.IsCompleted = false;
             await _repository.UpdateReminderAsync(reminder);
         }
-
 
         public DateTime ConvertUserTimeToUtc(TimeOnly requestedTime, string userTimezoneId)
         {
@@ -100,6 +104,7 @@ namespace MiraBot.Miraminders
             var utcTime = TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(dateTime, DateTimeKind.Unspecified), userTimezone);
             return utcTime;
         }
+
 
         public DateTime ConvertUtcToUserTime(TimeOnly utcTime, string userTimezoneId)
         {
@@ -122,12 +127,21 @@ namespace MiraBot.Miraminders
             }
         }
 
+        public async Task AddDateFormatToUserAsync(ulong discordId, bool isAmerican)
+        {
+            var user = await _repository.GetUserByDiscordIdAsync(discordId)
+                .ConfigureAwait(false);
+
+            user.UsesAmericanDateFormat = isAmerican;
+            await _repository.ModifyUserAsync(user);
+        }
+
         public static string CreateTimezoneFile()
         {
-            var path = Path.GetRandomFileName();
+            var fileName = Path.ChangeExtension(Path.GetRandomFileName(), ".txt");
             var timeZones = TimeZoneInfo.GetSystemTimeZones();
-            File.WriteAllLines(path, timeZones.Select(t => t.Id).ToArray());
-            return path;
+            File.WriteAllLines(fileName, timeZones.Select(t => t.Id).ToArray());
+            return fileName;
         }
     }
 }

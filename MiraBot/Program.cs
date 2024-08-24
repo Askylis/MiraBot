@@ -43,6 +43,7 @@ builder.Services.AddSingleton<IRemindersCache, RemindersCache>();
 builder.Services.AddTransient<GroceryAssistantComponents>();
 builder.Services.AddTransient<GroceryAssistant>();
 builder.Services.AddTransient<MiraminderService>();
+builder.Services.AddTransient<ReminderHandler>();
 
 using (var host = builder.Build())
 {

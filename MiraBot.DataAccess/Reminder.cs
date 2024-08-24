@@ -19,5 +19,19 @@ public partial class Reminder
 
     public bool IsRecurring { get; set; }
 
+    public int InSeconds { get; set; }
+
+    public int InMinutes { get; set; }
+
+    public int InHours { get; set; }
+
+    public int InDays { get; set; }
+
+    public int InWeeks { get; set; }
+
+    public int InMonths { get; set; }
+
+    public int InYears { get; set; }
+
     public virtual ICollection<User> Users { get; set; } = new List<User>();
 }
