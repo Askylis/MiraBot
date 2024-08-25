@@ -15,14 +15,17 @@ namespace MiraBot.Miraminders
         private List<string> completeInput;
         private static readonly string[] keywords = ["in", "on", "at", "every", "to", "that", "and", "from", "now", "a", "next"];
         private const int maxMessageLength = 50;
+        private readonly RemindersCache _cache;
         public ReminderHandler(
             IMiramindersRepository repository,
             DiscordSocketClient client,
-            MiraminderService service)
+            MiraminderService service,
+            RemindersCache cache)
         {
             _repository = repository;
             _client = client;
             _service = service;
+            _cache = cache;
         }
 
         // This is almost done. It can handle most types of reminders. It can't handle reminders like the following:
@@ -72,7 +75,7 @@ namespace MiraBot.Miraminders
 
             try
             {
-                await _repository.AddReminderAsync(reminder);
+                await _service.AddReminderAsync(reminder);
             }
             catch
             {
@@ -91,6 +94,7 @@ namespace MiraBot.Miraminders
             Console.WriteLine($"InMonths: {reminder.InMonths}");
             Console.WriteLine($"InYears: {reminder.InYears}");
             await SendMessageAsync("Got it, your reminder has been saved!", owner.DiscordId);
+            await _cache.RefreshCacheAsync();
         }
 
         private async Task<DateTime?> GetUserSpecifiedDateTimeAsync(User owner, Reminder reminder)
@@ -416,7 +420,7 @@ namespace MiraBot.Miraminders
 
             while (containsKeyword)
             {
-                if (keywords.Any(keyword => completeInput[0].Contains(keyword, StringComparison.OrdinalIgnoreCase)))
+                if (keywords.Any(keyword => string.Equals(completeInput[0], keyword, StringComparison.OrdinalIgnoreCase)))
                 {
                     completeInput.RemoveAt(0);
                 }

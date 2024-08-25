@@ -12,11 +12,13 @@ namespace MiraBot.Miraminders
         private readonly ILogger<MiraminderService> _logger;
         private readonly IDateTimeProvider _dateTimeProvider;
 
-        public MiraminderService(IMiramindersRepository repository, ILogger<MiraminderService> logger, IDateTimeProvider dateTimeProvider)
+        public MiraminderService(IMiramindersRepository repository, ILogger<MiraminderService> logger, 
+            IDateTimeProvider dateTimeProvider)
         {
             _repository = repository;
             _logger = logger;
             _dateTimeProvider = dateTimeProvider;
+ 
         }
 
         public async Task<string?> GetUserTimeZoneAsync(ulong discordId)
@@ -64,28 +66,9 @@ namespace MiraBot.Miraminders
                 .Any(t => t.Id.Equals(timezoneId, StringComparison.OrdinalIgnoreCase));
         }
 
-        public async Task AddReminderAsync(ulong ownerDiscordId, ulong recipientDiscordId, string message, DateTime dateTime, bool isRecurring)
+        public async Task AddReminderAsync(Reminder reminder)
         {
-            var owner = await _repository.GetUserByDiscordIdAsync(ownerDiscordId);
-            var recipient = ownerDiscordId != recipientDiscordId
-                ? await _repository.GetUserByDiscordIdAsync(recipientDiscordId)
-                : owner;
-
-            if (owner is null || recipient is null)
-            {
-                throw new InvalidOperationException("Cannot create reminder - either owner or recipient not found.");
-            }
-
-            var reminder = new Reminder
-            {
-                OwnerId = owner.UserId,
-                RecipientId = recipient.UserId,
-                Message = message,
-                DateTime = dateTime,
-                IsCompleted = false,
-                IsRecurring = isRecurring
-            };
-
+            var owner = await _repository.GetUserByUserIdAsync(reminder.OwnerId);
             await _repository.AddReminderAsync(reminder);
             _logger.LogDebug("Reminder added by {OwnerUserName}!", owner.UserName);
         }
@@ -105,6 +88,7 @@ namespace MiraBot.Miraminders
 
         public async Task CancelReminderAsync(Reminder reminder)
         {
+            reminder.IsRecurring = false;
             await _repository.MarkCompletedAsync(reminder.ReminderId);
         }
 

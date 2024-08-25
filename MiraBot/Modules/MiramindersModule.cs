@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Interactions;
 using Fergun.Interactive;
+using Microsoft.Extensions.DependencyInjection;
 using MiraBot.DataAccess;
 using MiraBot.Miraminders;
 
@@ -10,26 +11,25 @@ namespace MiraBot.Modules
     {
         private readonly InteractiveService _interactive;
         private readonly MiraminderService _reminderService;
-        private readonly ReminderHandler _handler;
         private readonly RemindersCache _cache;
         private readonly ModuleHelpers _helpers;
         public static int result = -1;
         public const int selectMenuLimit = 24;
-
+        private readonly IServiceProvider _serviceProvider;
         internal const int maxMessageLength = 250;
 
         public MiramindersModule(
             InteractiveService interactive,
             MiraminderService reminder,
-            ReminderHandler handler,
             RemindersCache cache,
-            ModuleHelpers moduleHelpers)
+            ModuleHelpers moduleHelpers,
+            IServiceProvider serviceProvider)
         {
             _interactive = interactive;
             _reminderService = reminder;
-            _handler = handler;
             _cache = cache;
             _helpers = moduleHelpers;
+            _serviceProvider = serviceProvider;
         }
 
 
@@ -43,7 +43,8 @@ namespace MiraBot.Modules
             {
                 await SaveUserTimezoneAsync(owner);
             }
-            await _handler.ParseReminderAsync(input, Context.User.Id);
+            var handler = _serviceProvider.GetRequiredService<ReminderHandler>();
+            await handler.ParseReminderAsync(input, Context.User.Id);
         }
 
         [SlashCommand("remindedit", "Edit an existing reminder.")]
@@ -64,7 +65,8 @@ namespace MiraBot.Modules
                 reminders.Select(r => r.Message).ToList(),
                 "Select which reminder you'd like to edit",
                 "Edit this reminder",
-                Context);
+                Context,
+                "select-menu");
 
                 if (index == -1)
                 {
@@ -85,13 +87,16 @@ namespace MiraBot.Modules
                 return;
             }
 
+            await RespondAsync("Gimme just a sec...");
+
             while (index != -1)
             {
                 index = await GetIndexOfUserChoiceAsync(
                                 reminders.Select(r => r.Message).ToList(),
                                 "Select which reminder you'd like to cancel",
                                 "Cancel this reminder",
-                                Context);
+                                Context,
+                                "select-menu");
 
                 if (index == -1)
                 {
@@ -101,6 +106,7 @@ namespace MiraBot.Modules
                 await _reminderService.CancelReminderAsync(reminders[index]);
                 await ReplyAsync("Okay, I cancelled that reminder for you. Anything else?");
                 reminders.RemoveAt(index);
+                await _cache.RefreshCacheAsync();
             }
         }
 
@@ -149,6 +155,7 @@ namespace MiraBot.Modules
                     var options = new List<string> { "8/30", "30/8" };
                     await GenerateSelectMenuAsync(options,
                         "How would you write out the date \"August 30th\"?",
+                        "select-menu",
                         string.Empty,
                         Context
                         );
@@ -193,7 +200,8 @@ namespace MiraBot.Modules
         public async Task<int> GetIndexOfUserChoiceAsync(List<string> messages,
             string placeholder,
             string? description,
-            SocketInteractionContext ctx
+            SocketInteractionContext ctx,
+            string customId
             )
         {
             int selection;
@@ -201,6 +209,7 @@ namespace MiraBot.Modules
             {
                 await GenerateSelectMenuAsync(messages,
                     placeholder,
+                    customId,
                     description,
                     ctx);
                 selection = result;
@@ -231,6 +240,7 @@ namespace MiraBot.Modules
         public async Task GenerateSelectMenuAsync(
             List<string> inputs,
             string placeholder,
+            string customId,
             string? optionDescription,
             SocketInteractionContext context,
             string defaultOption = "Nevermind",
@@ -239,6 +249,7 @@ namespace MiraBot.Modules
             var optionId = 0;
             var menuBuilder = new SelectMenuBuilder()
                 .WithPlaceholder(placeholder)
+                .WithCustomId(customId)
                 .AddOption(defaultOption, "nevermind", defaultOptionDescription);
 
             foreach (var input in inputs)
@@ -250,9 +261,9 @@ namespace MiraBot.Modules
             var builder = new ComponentBuilder()
                 .WithSelectMenu(menuBuilder);
 
-            var msg = await Context.Channel.SendMessageAsync(components: builder.Build());
+            var msg = await context.Channel.SendMessageAsync(components: builder.Build());
 
-            var menuResult = await _interactive.NextInteractionAsync(x => x.User.Username == Context.User.Username, timeout: TimeSpan.FromSeconds(120));
+            var menuResult = await _interactive.NextInteractionAsync(x => x.User.Username == context.User.Username, timeout: TimeSpan.FromSeconds(120));
 
             if (menuResult.IsSuccess)
             {

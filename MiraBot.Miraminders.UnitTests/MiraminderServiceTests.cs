@@ -15,6 +15,7 @@ namespace MiraBot.Miraminders.UnitTests
         private Mock<IMiramindersRepository> _repository;
         private Mock<IDateTimeProvider> _dateTimeProvider;
         private readonly ulong _discordId = 1;
+        private readonly int _userId = 5;
 
         [SetUp]
         public void Setup()
@@ -96,9 +97,10 @@ namespace MiraBot.Miraminders.UnitTests
             var date = new DateTime(2024, 8, 15, 0, 0, 0, DateTimeKind.Utc);
             var user = new User { DiscordId = _discordId, UserId = 2 };
             _repository.Setup(r => r.GetUserByDiscordIdAsync(_discordId)).ReturnsAsync(user);
+            var reminder = new Reminder { OwnerId = _userId, RecipientId = _userId, Message = message, DateTime = date };
 
             // Act
-            await service.AddReminderAsync(_discordId, _discordId, message, date, false);
+            await service.AddReminderAsync(reminder);
 
             // Assert
             _repository.Verify(r => r.AddReminderAsync(It.Is<Reminder>(n => n.OwnerId == user.UserId && n.RecipientId == user.UserId && n.Message == message)), Times.Once());
@@ -111,9 +113,10 @@ namespace MiraBot.Miraminders.UnitTests
             var service = new MiraminderService(_repository.Object, _logger, _dateTimeProvider.Object);
             var message = "test";
             var date = new DateTime(2024, 8, 15, 0, 0, 0, DateTimeKind.Utc);
+            var reminder = new Reminder { OwnerId = _userId, RecipientId = _userId, Message = message, DateTime = date };
 
             // Act
-            Func<Task> action = async () => await service.AddReminderAsync(_discordId, _discordId, message, date, false);
+            Func<Task> action = async () => await service.AddReminderAsync(reminder);
 
 
             // Assert
@@ -130,12 +133,13 @@ namespace MiraBot.Miraminders.UnitTests
             var date = new DateTime(2024, 8, 15, 0, 0, 0, DateTimeKind.Utc);
             var user = new User { DiscordId = _discordId, UserId = 2 };
             var recipient = new User { DiscordId = 2, UserId = 3 };
-            ulong recipientId = 2;
+            int recipientId = 2;
+            var reminder = new Reminder { OwnerId = _userId, RecipientId = recipientId, Message = message, DateTime = date };
 
             // Act
             _repository.Setup(r => r.GetUserByDiscordIdAsync(_discordId)).ReturnsAsync(user);
             _repository.Setup(r => r.GetUserByDiscordIdAsync(recipient.DiscordId)).ReturnsAsync(recipient);
-            await service.AddReminderAsync(_discordId, recipientId, message, date, false);
+            await service.AddReminderAsync(reminder);
 
             // Assert 
             _repository.Verify(r => r.AddReminderAsync(It.Is<Reminder>(n => n.OwnerId == user.UserId && n.RecipientId == recipient.UserId && n.Message == message)), Times.Once());
