@@ -44,6 +44,7 @@ builder.Services.AddTransient<GroceryAssistantComponents>();
 builder.Services.AddTransient<GroceryAssistant>();
 builder.Services.AddTransient<MiraminderService>();
 builder.Services.AddTransient<ReminderHandler>();
+builder.Services.AddTransient<ModuleHelpers>();
 
 using (var host = builder.Build())
 {

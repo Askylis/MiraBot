@@ -19,7 +19,7 @@ namespace MiraBot.Modules
         internal const int maxMessageLength = 250;
 
         public MiramindersModule(
-            InteractiveService interactive, 
+            InteractiveService interactive,
             MiraminderService reminder,
             ReminderHandler handler,
             RemindersCache cache,
@@ -49,6 +49,7 @@ namespace MiraBot.Modules
         [SlashCommand("remindedit", "Edit an existing reminder.")]
         public async Task EditReminderAsync()
         {
+            int index = 0;
             var user = await _reminderService.GetUserByDiscordId(Context.User.Id);
             var reminders = _cache.GetCacheContentsByUser(user.UserId);
             if (reminders.Count == 0)
@@ -56,12 +57,26 @@ namespace MiraBot.Modules
                 await RespondAsync("It doesn't look like you have any active reminders!");
                 return;
             }
-            await RespondAsync("This hasn't been implemented yet!");
+
+            while (index != -1)
+            {
+                index = await GetIndexOfUserChoiceAsync(
+                reminders.Select(r => r.Message).ToList(),
+                "Select which reminder you'd like to edit",
+                "Edit this reminder",
+                Context);
+
+                if (index == -1)
+                {
+                    break;
+                }
+            } 
         }
 
         [SlashCommand("remindcancel", "Cancel a reminder that either you own, or that someone sent to you.")]
         public async Task CancelReminderAsync()
         {
+            int index = 0;
             var user = await _reminderService.GetUserByDiscordId(Context.User.Id);
             var reminders = _cache.GetCacheContentsByUser(user.UserId);
             if (reminders.Count == 0)
@@ -69,7 +84,24 @@ namespace MiraBot.Modules
                 await RespondAsync("It doesn't look like you have any active reminders!");
                 return;
             }
-            await RespondAsync("This hasn't been implemented yet!");
+
+            while (index != -1)
+            {
+                index = await GetIndexOfUserChoiceAsync(
+                                reminders.Select(r => r.Message).ToList(),
+                                "Select which reminder you'd like to cancel",
+                                "Cancel this reminder",
+                                Context);
+
+                if (index == -1)
+                {
+                    break;
+                }
+
+                await _reminderService.CancelReminderAsync(reminders[index]);
+                await ReplyAsync("Okay, I cancelled that reminder for you. Anything else?");
+                reminders.RemoveAt(index);
+            }
         }
 
         [SlashCommand("remindfind", "Search your reminders that are saved by a keyword.")]
@@ -158,9 +190,9 @@ namespace MiraBot.Modules
             await FollowupWithFileAsync(fileName);
         }
 
-        public async Task<int> GetIndexOfUserChoice(List<string> messages, 
-            string placeholder, 
-            string? description, 
+        public async Task<int> GetIndexOfUserChoiceAsync(List<string> messages,
+            string placeholder,
+            string? description,
             SocketInteractionContext ctx
             )
         {

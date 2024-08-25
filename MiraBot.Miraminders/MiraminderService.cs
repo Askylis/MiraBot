@@ -96,11 +96,21 @@ namespace MiraBot.Miraminders
                 .AddMinutes(reminder.InMinutes)
                 .AddHours(reminder.InHours)
                 .AddDays(reminder.InDays)
-                .AddDays(reminder.InDays * 7)
+                .AddDays(reminder.InWeeks * 7)
                 .AddMonths(reminder.InMonths)
                 .AddYears(reminder.InYears);
             reminder.IsCompleted = false;
             await _repository.UpdateReminderAsync(reminder);
+        }
+
+        public async Task CancelReminderAsync(Reminder reminder)
+        {
+            await _repository.MarkCompletedAsync(reminder.ReminderId);
+        }
+
+        public async Task EditReminderAsync(Reminder reminder)
+        {
+            
         }
 
         public DateTime ConvertUserTimeToUtc(TimeOnly requestedTime, string userTimezoneId)
@@ -164,7 +174,7 @@ namespace MiraBot.Miraminders
 
                 if ((response.Length + currentReminder.Length) > 2000)
                 {
-                    message.Add(response.ToString());
+                    messages.Add(response.ToString());
                     response.Clear();
                 }
 
