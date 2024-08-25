@@ -14,6 +14,7 @@ namespace MiraBot.Miraminders
         private readonly TimeOnly defaultTime = new(17, 0);
         private List<string> completeInput;
         private static readonly string[] keywords = ["in", "on", "at", "every", "to", "that", "and", "from", "now", "a", "next"];
+        private const int maxMessageLength = 50;
         public ReminderHandler(
             IMiramindersRepository repository,
             DiscordSocketClient client,
@@ -61,6 +62,12 @@ namespace MiraBot.Miraminders
             else
             {
                 reminder.Message = string.Join(" ", completeInput);
+            }
+
+            if (reminder.Message.Length > 50)
+            {
+                await SendMessageAsync($"I couldn't save your reminder because the attached message is too long. Max length for reminder messages is {maxMessageLength} characters, but your message contained {reminder.Message.Length} characters.", owner.DiscordId);
+                return;
             }
 
             try

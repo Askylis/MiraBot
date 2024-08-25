@@ -11,17 +11,20 @@ namespace MiraBot.Modules
         private readonly GroceryAssistant _groceryAssistant;
         private readonly InteractiveService _interactiveService;
         private readonly GroceryAssistantComponents _components;
+        private readonly ModuleHelpers _helpers;
         internal static int modifyValue = 0;
         internal const int maxNameLength = 50;
         internal const int discordMsgLimit = 2000;
         internal const int maxIngredients = 100;
         internal const int selectMenuLimit = 24;
         internal const int maxIngredientLength = 1500;
-        public GroceryAssistantModule(GroceryAssistant groceryAssistant, InteractiveService interactiveService, GroceryAssistantComponents components)
+        public GroceryAssistantModule(GroceryAssistant groceryAssistant, InteractiveService interactiveService, 
+            GroceryAssistantComponents components, ModuleHelpers moduleHelpers)
         {
             _groceryAssistant = groceryAssistant;
             _interactiveService = interactiveService;
             _components = components;
+            _helpers = moduleHelpers;
         }
 
 
@@ -186,7 +189,7 @@ namespace MiraBot.Modules
             var meals = await _groceryAssistant.GetAllMealsAsync(Context.User.Id);
             var mealCount = meals.Count;
             await RespondAsync($"Okay, tell me how many meals you want! You have {mealCount} total meals. You can also select \"0\" to cancel this command.");
-            int numberOfMeals = await GetValidNumberAsync(0, mealCount);
+            int numberOfMeals = await _helpers.GetValidNumberAsync(0, mealCount);
             int index = 0;
 
             if (numberOfMeals == 0)
@@ -309,7 +312,7 @@ namespace MiraBot.Modules
             else
             {
                 await SendLongMessageAsync(meals: meals);
-                selection = await GetValidNumberAsync(0, meals.Count);
+                selection = await _helpers.GetValidNumberAsync(0, meals.Count);
                 selection--;
             }
 
@@ -332,33 +335,6 @@ namespace MiraBot.Modules
             _groceryAssistant.WriteSelectionFile(filePath, selectedMeals);
             await FollowupWithFileAsync(filePath);
         }
-
-
-        public async Task<int> GetValidNumberAsync(int minNumber, int maxNumber)
-        {
-            int userChoice = 0;
-            bool isValid = false;
-
-            while (!isValid)
-            {
-                var input = await _interactiveService.NextMessageAsync(x => x.Author.Id == Context.User.Id && x.Channel.Id == Context.Channel.Id,
-            timeout: TimeSpan.FromMinutes(2));
-
-                if (!input.IsSuccess)
-                {
-                    return 0;
-                }
-                isValid = int.TryParse(input.Value.Content, out userChoice);
-                isValid = isValid && userChoice <= maxNumber && userChoice >= 0;
-                if (!isValid)
-                {
-                    await ReplyAsync($"That doesn't seem to work. Please enter a number between {minNumber} and {maxNumber}.");
-                }
-            }
-
-            return userChoice;
-        }
-
 
         public async Task<string> GetValidNameAsync(bool isIngredient, string? name = null)
         {

@@ -2,6 +2,7 @@
 using MiraBot.Common;
 using MiraBot.DataAccess;
 using MiraBot.DataAccess.Repositories;
+using System.Text;
 
 namespace MiraBot.Miraminders
 {
@@ -49,6 +50,11 @@ namespace MiraBot.Miraminders
         {
             return await _repository.GetUserByNameAsync(userName)
                 .ConfigureAwait(false);
+        }
+
+        public async Task<User?> GetUserByDiscordId(ulong discordId)
+        {
+            return await _repository.GetUserByDiscordIdAsync(discordId);
         }
 
         public static bool IsValidTimezone(string timezoneId)
@@ -142,6 +148,36 @@ namespace MiraBot.Miraminders
             var timeZones = TimeZoneInfo.GetSystemTimeZones();
             File.WriteAllLines(fileName, timeZones.Select(t => t.Id).ToArray());
             return fileName;
+        }
+
+        public List<string> SendLongMessage(List<string> reminderMessages)
+        {
+            var response = new StringBuilder();
+            var messages = new List<string>();
+            int counter = 1;
+
+            foreach (var message in reminderMessages)
+            {
+                string currentReminder;
+
+                currentReminder = $"{counter}. {message}";
+
+                if ((response.Length + currentReminder.Length) > 2000)
+                {
+                    message.Add(response.ToString());
+                    response.Clear();
+                }
+
+                response.Append(currentReminder);
+                counter++;
+            }
+
+            if (response.Length > 0)
+            {
+                messages.Add(response.ToString());
+            }
+
+            return messages;
         }
     }
 }

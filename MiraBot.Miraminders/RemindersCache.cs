@@ -44,5 +44,11 @@ namespace MiraBot.Miraminders
                 }
             }
         }
+
+        public List<Reminder> GetCacheContentsByUser(int ownerId)
+        {
+            var cache = _cache.Where(r => r.OwnerId == ownerId).ToList();
+            return cache;
+        }
     }
 }

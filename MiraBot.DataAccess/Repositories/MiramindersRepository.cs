@@ -28,10 +28,13 @@ namespace MiraBot.DataAccess.Repositories
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
-                var original = await context.Reminders.FirstOrDefaultAsync(r => r.ReminderId == reminder.ReminderId)
-                    .ConfigureAwait(false);
-                original.DateTime = reminder.DateTime;
-                original.IsCompleted = reminder.IsCompleted;
+                var original = context.Reminders.Find(reminder.ReminderId);
+                if (original is null)
+                {
+                    return;
+                }
+
+                context.Entry(original).CurrentValues.SetValues(reminder);
                 await context.SaveChangesAsync()
                     .ConfigureAwait(false);
             }

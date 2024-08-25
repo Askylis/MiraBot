@@ -11,18 +11,25 @@ namespace MiraBot.Modules
         private readonly InteractiveService _interactive;
         private readonly MiraminderService _reminderService;
         private readonly ReminderHandler _handler;
+        private readonly RemindersCache _cache;
+        private readonly ModuleHelpers _helpers;
         public static int result = -1;
+        public const int selectMenuLimit = 24;
 
         internal const int maxMessageLength = 250;
 
         public MiramindersModule(
             InteractiveService interactive, 
             MiraminderService reminder,
-            ReminderHandler handler)
+            ReminderHandler handler,
+            RemindersCache cache,
+            ModuleHelpers moduleHelpers)
         {
             _interactive = interactive;
             _reminderService = reminder;
             _handler = handler;
+            _cache = cache;
+            _helpers = moduleHelpers;
         }
 
 
@@ -42,18 +49,39 @@ namespace MiraBot.Modules
         [SlashCommand("remindedit", "Edit an existing reminder.")]
         public async Task EditReminderAsync()
         {
+            var user = await _reminderService.GetUserByDiscordId(Context.User.Id);
+            var reminders = _cache.GetCacheContentsByUser(user.UserId);
+            if (reminders.Count == 0)
+            {
+                await RespondAsync("It doesn't look like you have any active reminders!");
+                return;
+            }
             await RespondAsync("This hasn't been implemented yet!");
         }
 
         [SlashCommand("remindcancel", "Cancel a reminder that either you own, or that someone sent to you.")]
         public async Task CancelReminderAsync()
         {
+            var user = await _reminderService.GetUserByDiscordId(Context.User.Id);
+            var reminders = _cache.GetCacheContentsByUser(user.UserId);
+            if (reminders.Count == 0)
+            {
+                await RespondAsync("It doesn't look like you have any active reminders!");
+                return;
+            }
             await RespondAsync("This hasn't been implemented yet!");
         }
 
         [SlashCommand("remindfind", "Search your reminders that are saved by a keyword.")]
         public async Task FindReminderAsync(string word)
         {
+            var user = await _reminderService.GetUserByDiscordId(Context.User.Id);
+            var reminders = _cache.GetCacheContentsByUser(user.UserId);
+            if (reminders.Count == 0)
+            {
+                await RespondAsync("It doesn't look like you have any active reminders!");
+                return;
+            }
             await RespondAsync("This hasn't been implemented yet!");
         }
 
@@ -86,7 +114,12 @@ namespace MiraBot.Modules
                 if (owner.UsesAmericanDateFormat is null)
                 {
                     await ReplyAsync("How would you write out the date \"August 30th\"?");
-                    await GenerateSelectMenuAsync();
+                    var options = new List<string> { "8/30", "30/8" };
+                    await GenerateSelectMenuAsync(options,
+                        "How would you write out the date \"August 30th\"?",
+                        string.Empty,
+                        Context
+                        );
                     var selection = result;
                     result = -1;
                     bool isAmerican;
@@ -125,13 +158,62 @@ namespace MiraBot.Modules
             await FollowupWithFileAsync(fileName);
         }
 
-        public async Task GenerateSelectMenuAsync()
+        public async Task<int> GetIndexOfUserChoice(List<string> messages, 
+            string placeholder, 
+            string? description, 
+            SocketInteractionContext ctx
+            )
         {
+            int selection;
+            if (messages.Count <= selectMenuLimit)
+            {
+                await GenerateSelectMenuAsync(messages,
+                    placeholder,
+                    description,
+                    ctx);
+                selection = result;
+                result = 0;
+            }
+
+            else
+            {
+                await SendLongMessageAsync(messages);
+                selection = await _helpers.GetValidNumberAsync(0, messages.Count);
+                selection--;
+            }
+
+            return selection;
+        }
+
+
+        public async Task SendLongMessageAsync(List<string> input)
+        {
+            var messages = _reminderService.SendLongMessage(input);
+
+            foreach (var message in messages)
+            {
+                await ReplyAsync(message);
+            }
+        }
+
+        public async Task GenerateSelectMenuAsync(
+            List<string> inputs,
+            string placeholder,
+            string? optionDescription,
+            SocketInteractionContext context,
+            string defaultOption = "Nevermind",
+            string defaultOptionDescription = "Abandon this action")
+        {
+            var optionId = 0;
             var menuBuilder = new SelectMenuBuilder()
-                .WithPlaceholder("Select a format.")
-                .WithCustomId("select-menu")
-                .AddOption("8/30", "1")
-                .AddOption("30/8", "0");
+                .WithPlaceholder(placeholder)
+                .AddOption(defaultOption, "nevermind", defaultOptionDescription);
+
+            foreach (var input in inputs)
+            {
+                menuBuilder.AddOption(input, $"option-{optionId}", optionDescription);
+                optionId++;
+            }
 
             var builder = new ComponentBuilder()
                 .WithSelectMenu(menuBuilder);
