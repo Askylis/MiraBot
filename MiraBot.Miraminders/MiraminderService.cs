@@ -11,14 +11,15 @@ namespace MiraBot.Miraminders
         private readonly IMiramindersRepository _repository;
         private readonly ILogger<MiraminderService> _logger;
         private readonly IDateTimeProvider _dateTimeProvider;
+        private readonly UsersCache _usersCache;
 
         public MiraminderService(IMiramindersRepository repository, ILogger<MiraminderService> logger, 
-            IDateTimeProvider dateTimeProvider)
+            IDateTimeProvider dateTimeProvider, UsersCache usersCache)
         {
             _repository = repository;
             _logger = logger;
             _dateTimeProvider = dateTimeProvider;
- 
+            _usersCache = usersCache;
         }
 
         public async Task<string?> GetUserTimeZoneAsync(ulong discordId)
@@ -45,6 +46,7 @@ namespace MiraBot.Miraminders
 
             var newUser = new User { DiscordId = discordId, UserName = username };
             await _repository.AddNewUserAsync(newUser);
+            await _usersCache.RefreshCacheAsync();
             return newUser;
         }
 

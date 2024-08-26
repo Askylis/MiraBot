@@ -101,14 +101,34 @@ namespace MiraBot.Modules
         [SlashCommand("remindfind", "Search your reminders that are saved by a keyword.")]
         public async Task FindReminderAsync(string word)
         {
+            await RespondAsync("Lemme look this up...");
             var user = await _reminderService.GetUserByDiscordIdAsync(Context.User.Id);
             var reminders = _cache.GetCacheContentsByUser(user.UserId);
+            List<Reminder> matchingReminders = new();
             if (reminders.Count == 0)
             {
-                await RespondAsync("It doesn't look like you have any active reminders!");
+                await ReplyAsync("It doesn't look like you have any active reminders!");
                 return;
             }
-            await RespondAsync("This hasn't been implemented yet!");
+            foreach (var reminder in reminders)
+            {
+                if (reminder.Message.Contains(word))
+                {
+                    matchingReminders.Add(reminder);
+                }
+            }
+            if (matchingReminders.Count == 0)
+            {
+                await ReplyAsync($"I couldn't find a reminder that contained \"{word}\".");
+                return;
+            }
+            await ReplyAsync($"I found {matchingReminders.Count} reminders!");
+            int counter = 1;
+            foreach (var reminder in matchingReminders)
+            {
+                await ReplyAsync($"{counter}. **\"{reminder.Message}\"** set for **{reminder.DateTime}**");
+                counter++;
+            }
         }
 
 
