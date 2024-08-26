@@ -54,7 +54,7 @@ namespace MiraBot.Miraminders
                 .ConfigureAwait(false);
         }
 
-        public async Task<User?> GetUserByDiscordId(ulong discordId)
+        public async Task<User?> GetUserByDiscordIdAsync(ulong discordId)
         {
             return await _repository.GetUserByDiscordIdAsync(discordId);
         }
@@ -92,7 +92,7 @@ namespace MiraBot.Miraminders
             await _repository.MarkCompletedAsync(reminder.ReminderId);
         }
 
-        public async Task EditReminderAsync(Reminder reminder)
+        public async Task FindReminderAsync(Reminder reminder)
         {
             
         }
@@ -144,17 +144,17 @@ namespace MiraBot.Miraminders
             return fileName;
         }
 
-        public List<string> SendLongMessage(List<string> reminderMessages)
+        public List<string> SendLongMessage(List<Reminder> reminders)
         {
             var response = new StringBuilder();
             var messages = new List<string>();
             int counter = 1;
 
-            foreach (var message in reminderMessages)
+            foreach (var reminder in reminders)
             {
                 string currentReminder;
 
-                currentReminder = $"{counter}. {message}";
+                currentReminder = $"{counter}. Reminder message: {reminder.Message}\n\tReminder set for: {reminder.DateTime}\n\n";
 
                 if ((response.Length + currentReminder.Length) > 2000)
                 {

@@ -21,5 +21,6 @@
         Task<User?> GetUserByUserIdAsync(int userId);
         Task UpdateReminderAsync(Reminder reminder);
         Task DeleteReminderAsync(Reminder reminder);
+        Task<List<UserNameAndId>> GetUserNamesAndIdsAsync();
     }
 }

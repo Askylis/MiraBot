@@ -143,6 +143,15 @@ namespace MiraBot.DataAccess.Repositories
             }
         }
 
+        public async Task<List<UserNameAndId>> GetUserNamesAndIdsAsync()
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                var users = context.Users.Select(u => new UserNameAndId(u.UserName, u.UserId)).ToList();
+                return users;
+            }
+        }
+
         public async Task ModifyUserAsync(User user)
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))

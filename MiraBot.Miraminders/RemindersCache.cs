@@ -20,7 +20,7 @@ namespace MiraBot.Miraminders
 
         public async Task RefreshCacheAsync()
         {
-            _logger.LogInformation("Refreshing Reminders Cache");
+            _logger.LogInformation("Refreshing reminders cache...");
             await Task.WhenAll(_toDelete.Where(d => !d.IsRecurring).Select(reminder => _repository.MarkCompletedAsync(reminder.ReminderId)));
             _toDelete.Clear();
             _cache.Clear();
@@ -45,9 +45,9 @@ namespace MiraBot.Miraminders
             }
         }
 
-        public List<Reminder> GetCacheContentsByUser(int ownerId)
+        public List<Reminder> GetCacheContentsByUser(int userId)
         {
-            var cache = _cache.Where(r => r.OwnerId == ownerId).ToList();
+            var cache = _cache.Where(r => r.RecipientId == userId || r.OwnerId == userId).ToList();
             return cache;
         }
     }

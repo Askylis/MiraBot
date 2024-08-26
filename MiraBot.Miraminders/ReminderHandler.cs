@@ -1,6 +1,5 @@
 ﻿using Discord.WebSocket;
 using MiraBot.DataAccess;
-using MiraBot.DataAccess.Repositories;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
@@ -8,43 +7,46 @@ namespace MiraBot.Miraminders
 {
     public class ReminderHandler
     {
-        private readonly IMiramindersRepository _repository;
-        private readonly DiscordSocketClient _client;
         private readonly MiraminderService _service;
         private readonly TimeOnly defaultTime = new(17, 0);
         private List<string> completeInput;
         private static readonly string[] keywords = ["in", "on", "at", "every", "to", "that", "and", "from", "now", "a", "next"];
-        private const int maxMessageLength = 50;
-        private readonly RemindersCache _cache;
+        private const int maxMessageLength = 100;
+        private readonly RemindersCache _reminderCache;
+        private readonly UsersCache _userCache;
         public ReminderHandler(
-            IMiramindersRepository repository,
-            DiscordSocketClient client,
             MiraminderService service,
-            RemindersCache cache)
+            RemindersCache cache,
+            UsersCache usersCache)
         {
-            _repository = repository;
-            _client = client;
             _service = service;
-            _cache = cache;
+            _reminderCache = cache;
+            _userCache = usersCache;
         }
 
         // This is almost done. It can handle most types of reminders. It can't handle reminders like the following:
         // remind me every Monday and Friday to do this thing
         // remind me every other Thursday to do this thing
         // remind me next Friday to complete this task 
+        // can't handle more complex reminders...for example, "remind me every day at 12:34" will detect that it's recurring, 
+        // but will get the 12:34 and then build the reminder without detecting how much time there should be
+        // between reminders. so it basically makes a one-off reminder...
         // I'll update it to handle reminders like that soon
-        // I added TimeFrame.cs and TimeFrameMapping.cs to handle all sorts of timeframes
-        public async Task ParseReminderAsync(string input, ulong ownerId)
+        // Currently can't clean keywords that occur *after* the intended reminder message. For example, if you send:
+        // remind me to go to the store in 5 hours and 5 minutes
+        // the reminder message will be "go to the store in and"
+        // need to fix that by checking for a keyword in the element before the number that's found before the timeframe
+        public async Task<string> ParseReminderAsync(string input, ulong ownerId)
         {
             // splits the input into a list for easier management
             completeInput = input.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
-            var owner = await _repository.GetUserByDiscordIdAsync(ownerId);
+            var owner = await _service.GetUserByDiscordIdAsync(ownerId);
 
             // makes new reminder that can be modified
             var reminder = new Reminder { OwnerId = owner.UserId };
 
             // extract the intended recipient from the reminder input 
-            reminder.RecipientId = await GetRecipientIdAsync(completeInput, owner.UserId);
+            reminder.RecipientId = GetRecipientIdAsync(owner.UserId);
 
             // search for keyword "every" to determine whether or not this reminder is recurring
             reminder.IsRecurring = IsRecurringReminder();
@@ -53,10 +55,15 @@ namespace MiraBot.Miraminders
             var dateTime = await GetUserSpecifiedDateTimeAsync(owner, reminder);
             if (dateTime is null)
             {
-                await SendMessageAsync("Couldn't find a valid date or time in your reminder input, so I can't build your reminder.", owner.DiscordId);
-                return;
+                return "Couldn't find a valid date or time in your reminder input, so I can't build your reminder.";
             }
             reminder.DateTime = (DateTime)dateTime;
+
+            if (reminder.IsRecurring && reminder.OwnerId != reminder.RecipientId && reminder.DateTime.AddMinutes(5) <= DateTime.UtcNow.AddMinutes(5) && owner.UserName != "askylis")
+            {
+                return "To prevent unwanted spam, I can't send recurring reminders to another user this frequently. Recurring reminders to someone else must be at least 5 minutes apart.";
+            }
+
             CleanReminderMessage();
             if (completeInput.Count == 0)
             {
@@ -67,10 +74,9 @@ namespace MiraBot.Miraminders
                 reminder.Message = string.Join(" ", completeInput);
             }
 
-            if (reminder.Message.Length > 50)
+            if (reminder.Message.Length > maxMessageLength)
             {
-                await SendMessageAsync($"I couldn't save your reminder because the attached message is too long. Max length for reminder messages is {maxMessageLength} characters, but your message contained {reminder.Message.Length} characters.", owner.DiscordId);
-                return;
+                return $"I couldn't save your reminder because the attached message is too long. Max length for reminder messages is {maxMessageLength} characters, but your message contained {reminder.Message.Length} characters.";
             }
 
             try
@@ -79,8 +85,7 @@ namespace MiraBot.Miraminders
             }
             catch
             {
-                await SendMessageAsync("I couldn't add your reminder. It either contained typos, was missing information, or was too complex for me. Sorry!", ownerId);
-                return;
+                return "I couldn't add your reminder. It either contained typos, was missing information, or was too complex for me. Sorry!";
             }
             Console.WriteLine($"reminder.RecipientId is \"{reminder.RecipientId}\".");
             Console.WriteLine($"reminder.DateTime is \"{reminder.DateTime}\".");
@@ -93,8 +98,8 @@ namespace MiraBot.Miraminders
             Console.WriteLine($"InWeeks: {reminder.InWeeks}");
             Console.WriteLine($"InMonths: {reminder.InMonths}");
             Console.WriteLine($"InYears: {reminder.InYears}");
-            await SendMessageAsync("Got it, your reminder has been saved!", owner.DiscordId);
-            await _cache.RefreshCacheAsync();
+            await _reminderCache.RefreshCacheAsync();
+            return "Got it, your reminder has been saved!";
         }
 
         private async Task<DateTime?> GetUserSpecifiedDateTimeAsync(User owner, Reminder reminder)
@@ -132,7 +137,6 @@ namespace MiraBot.Miraminders
 
             else
             {
-                await SendMessageAsync($"You either didn't enter a time at all, or entered an invalid time. Falling back to {defaultTime} default time.", owner.DiscordId);
                 time = GetDefaultUtcTime(owner);
             }
 
@@ -144,27 +148,27 @@ namespace MiraBot.Miraminders
             return dateTime != DateTime.MinValue ? dateTime : null;
         }
 
-        private async Task<int> GetRecipientIdAsync(List<string> words, int ownerId)
+        private int GetRecipientIdAsync(int ownerId)
         {
             // check to see if the first word is "me". If it is, then it's faster because it doesn't require using the database
             // for every word in the reminder input.
-            if (words[0].Equals("me", StringComparison.OrdinalIgnoreCase))
+            if (completeInput[0].Equals("me", StringComparison.OrdinalIgnoreCase))
             {
                 completeInput.RemoveAt(0);
                 return ownerId;
             }
             // if the first word isn't "me", then run each word in the reminder input against the database to see if it contains a user
 
-            int recipientIndex = 0;
-            foreach (var word in words)
+            int index = 0;
+            foreach (var word in completeInput)
             {
-                var recipient = await _repository.GetUserByNameAsync(word);
-                if (recipient is not null)
+                var user = _userCache.GetUserByName(word);
+                if (user is not null)
                 {
-                    completeInput.RemoveAt(recipientIndex);
-                    return recipient.UserId;
+                    completeInput.RemoveAt(index);
+                    return user.UserId;
                 }
-                recipientIndex++;
+                index++;
             }
             // if neither is true, then return the ownerId since a recipient couldn't be found
             return ownerId;
@@ -250,6 +254,7 @@ namespace MiraBot.Miraminders
                     }
                     // if AM/PM isn't found, then the time is assumed to be in 12h time and the element that can be parsed is removed. 
                     removeRange.Add(index);
+                    break;
                 }
                 index++;
             }
@@ -274,6 +279,8 @@ namespace MiraBot.Miraminders
             
             // if time is still the default value, then this method was not able to parse anything from completeInput, 
             // and therefore should return null. 
+            // actually, this doesn't work very well because what if the user wants 00:00:00? Then it'll return null, even tho
+            // that's not what we want. Need to find a better way to do this
             if (time == TimeOnly.MinValue)
             {
                 return null;
@@ -400,13 +407,6 @@ namespace MiraBot.Miraminders
             var utcDateTime = TimeZoneInfo.ConvertTimeToUtc(userLocalDateTime, timezone);
             var utcTimeOnly = TimeOnly.FromDateTime(utcDateTime);
             return utcTimeOnly;
-        }
-
-        private async Task SendMessageAsync(string message, ulong ownerId)
-        {
-            var ownerDiscord = await _client.Rest.GetUserAsync(ownerId);
-            var ownerDm = await ownerDiscord.CreateDMChannelAsync();
-            await ownerDm.SendMessageAsync(message);
         }
 
         private void CleanReminderMessage()

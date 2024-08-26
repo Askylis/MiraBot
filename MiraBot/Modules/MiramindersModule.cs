@@ -44,42 +44,16 @@ namespace MiraBot.Modules
                 await SaveUserTimezoneAsync(owner);
             }
             var handler = _serviceProvider.GetRequiredService<ReminderHandler>();
-            await handler.ParseReminderAsync(input, Context.User.Id);
+            await ReplyAsync(await handler.ParseReminderAsync(input, Context.User.Id));
         }
 
-        [SlashCommand("remindedit", "Edit an existing reminder.")]
-        public async Task EditReminderAsync()
-        {
-            int index = 0;
-            var user = await _reminderService.GetUserByDiscordId(Context.User.Id);
-            var reminders = _cache.GetCacheContentsByUser(user.UserId);
-            if (reminders.Count == 0)
-            {
-                await RespondAsync("It doesn't look like you have any active reminders!");
-                return;
-            }
-
-            while (index != -1)
-            {
-                index = await GetIndexOfUserChoiceAsync(
-                reminders.Select(r => r.Message).ToList(),
-                "Select which reminder you'd like to edit",
-                "Edit this reminder",
-                Context,
-                "select-menu");
-
-                if (index == -1)
-                {
-                    break;
-                }
-            } 
-        }
 
         [SlashCommand("remindcancel", "Cancel a reminder that either you own, or that someone sent to you.")]
         public async Task CancelReminderAsync()
         {
+            await _reminderService.EnsureUserExistsAsync(Context.User.Id, Context.User.Username);
             int index = 0;
-            var user = await _reminderService.GetUserByDiscordId(Context.User.Id);
+            var user = await _reminderService.GetUserByDiscordIdAsync(Context.User.Id);
             var reminders = _cache.GetCacheContentsByUser(user.UserId);
             if (reminders.Count == 0)
             {
@@ -92,7 +66,7 @@ namespace MiraBot.Modules
             while (index != -1)
             {
                 index = await GetIndexOfUserChoiceAsync(
-                                reminders.Select(r => r.Message).ToList(),
+                                reminders,
                                 "Select which reminder you'd like to cancel",
                                 "Cancel this reminder",
                                 Context,
@@ -110,10 +84,24 @@ namespace MiraBot.Modules
             }
         }
 
+        [SlashCommand("remindlist", "List all of your active reminders.")]
+        public async Task ListRemindersAsync()
+        {
+            await RespondAsync("Gimme just a sec!");
+            var user = await _reminderService.GetUserByDiscordIdAsync(Context.User.Id);
+            var reminders = _cache.GetCacheContentsByUser(user.UserId);
+            if (reminders.Count == 0)
+            {
+                await ReplyAsync("You don't have any active reminders.");
+                return;
+            }
+            await SendLongMessageAsync(reminders);
+        }
+
         [SlashCommand("remindfind", "Search your reminders that are saved by a keyword.")]
         public async Task FindReminderAsync(string word)
         {
-            var user = await _reminderService.GetUserByDiscordId(Context.User.Id);
+            var user = await _reminderService.GetUserByDiscordIdAsync(Context.User.Id);
             var reminders = _cache.GetCacheContentsByUser(user.UserId);
             if (reminders.Count == 0)
             {
@@ -197,7 +185,7 @@ namespace MiraBot.Modules
             await FollowupWithFileAsync(fileName);
         }
 
-        public async Task<int> GetIndexOfUserChoiceAsync(List<string> messages,
+        public async Task<int> GetIndexOfUserChoiceAsync(List<Reminder> messages,
             string placeholder,
             string? description,
             SocketInteractionContext ctx,
@@ -207,7 +195,7 @@ namespace MiraBot.Modules
             int selection;
             if (messages.Count <= selectMenuLimit)
             {
-                await GenerateSelectMenuAsync(messages,
+                await GenerateSelectMenuAsync(messages.Select(m => m.Message).ToList(),
                     placeholder,
                     customId,
                     description,
@@ -227,9 +215,9 @@ namespace MiraBot.Modules
         }
 
 
-        public async Task SendLongMessageAsync(List<string> input)
+        public async Task SendLongMessageAsync(List<Reminder> reminders)
         {
-            var messages = _reminderService.SendLongMessage(input);
+            var messages = _reminderService.SendLongMessage(reminders);
 
             foreach (var message in messages)
             {
