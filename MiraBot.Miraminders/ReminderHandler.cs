@@ -1,6 +1,7 @@
 ﻿using Discord.WebSocket;
 using MiraBot.DataAccess;
 using System.Globalization;
+using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
 
 namespace MiraBot.Miraminders
@@ -10,7 +11,7 @@ namespace MiraBot.Miraminders
         private readonly MiraminderService _service;
         private readonly TimeOnly defaultTime = new(17, 0);
         private List<string> completeInput;
-        private static readonly string[] keywords = ["in", "on", "at", "every", "to", "that", "and", "from", "now", "a", "next"];
+        private static readonly string[] keywords = ["in", "on", "at", "every", "to", "that", "and", "from", "now", "a", "an", "next"];
         private const int maxMessageLength = 100;
         private readonly RemindersCache _reminderCache;
         private readonly UsersCache _userCache;
@@ -24,7 +25,8 @@ namespace MiraBot.Miraminders
             _userCache = usersCache;
         }
 
-        // This is almost done. It can handle most types of reminders. It can't handle reminders like the following:
+        // This is almost done. It can handle most types of reminders. 
+        // UPDATE: this is *NOT* almost done lol. It can't handle reminders like the following:
         // remind me every Monday and Friday to do this thing
         // remind me every other Thursday to do this thing
         // remind me next Friday to complete this task 
@@ -36,35 +38,61 @@ namespace MiraBot.Miraminders
         // remind me to go to the store in 5 hours and 5 minutes
         // the reminder message will be "go to the store in and"
         // need to fix that by checking for a keyword in the element before the number that's found before the timeframe
+        // "remind me *this* Monday" vs "remind me *next* Monday"
+        // "remind me every August 15th that today is a good day" 
+        // need to check to see if an input contains 2 separate reminders, 
+        // e.g. "remind me every Monday and Friday to do this thing"
+        // commas aren't properly clearing. Mira can't understand "5 hours,", so I need to find a way to clean commas off of each input
+        // before scanning it
         public async Task<string> ParseReminderAsync(string input, ulong ownerId)
         {
             // splits the input into a list for easier management
             completeInput = input.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+
             var owner = await _service.GetUserByDiscordIdAsync(ownerId);
 
             // makes new reminder that can be modified
-            var reminder = new Reminder { OwnerId = owner.UserId };
+            var reminder = new Reminder
+            {
+                OwnerId = owner.UserId,
+                RecipientId = GetRecipientIdAsync(owner.UserId)
+            };
 
-            // extract the intended recipient from the reminder input 
-            reminder.RecipientId = GetRecipientIdAsync(owner.UserId);
-
-            // search for keyword "every" to determine whether or not this reminder is recurring
-            reminder.IsRecurring = IsRecurringReminder();
+            // search for keyword "every" to determine whether or not this reminder is recurring. If it's recurring, figure out
+            // how often the reminder is supposed to go off. 
+            reminder = CheckForRecurringReminder(reminder, owner);
 
             // extract the intended date and time from the reminder input
-            var dateTime = await GetUserSpecifiedDateTimeAsync(owner, reminder);
+            DateTime? dateTime = new();
+            if (reminder.DateTime == DateTime.MinValue)
+            {
+                dateTime = GetUserSpecifiedDateTimeAsync(owner, reminder);
+            }
             if (dateTime is null)
             {
                 return "Couldn't find a valid date or time in your reminder input, so I can't build your reminder.";
             }
-            reminder.DateTime = (DateTime)dateTime;
-
-            if (reminder.IsRecurring && reminder.OwnerId != reminder.RecipientId && reminder.DateTime.AddMinutes(5) <= DateTime.UtcNow.AddMinutes(5) && owner.UserName != "askylis")
+            if (reminder.DateTime == DateTime.MinValue)
             {
-                return "To prevent unwanted spam, I can't send recurring reminders to another user this frequently. Recurring reminders to someone else must be at least 5 minutes apart.";
+                reminder.DateTime = (DateTime)dateTime;
             }
 
+            if (reminder.DateTime < DateTime.UtcNow)
+            {
+                return "Can't save your reminder because it's set to go off in the past.";
+            }
+
+            if (ReminderIsSpamAsync(reminder, owner))
+            {
+                return "To prevent unwanted spam, I can't send reminders to another user this frequently. Reminders to another user can't be within 5 minutes of each other.";
+            }
+
+            // This method is used to clean commas from a reminder input instead of just adding a comma to the input split in ParseReminderAsync().
+            // This is so commas that are intended to be part of the reminder message aren't removed. 
+            CleanCommasFromInput();
+
             CleanReminderMessage();
+
             if (completeInput.Count == 0)
             {
                 reminder.Message = "No attached message.";
@@ -79,6 +107,11 @@ namespace MiraBot.Miraminders
                 return $"I couldn't save your reminder because the attached message is too long. Max length for reminder messages is {maxMessageLength} characters, but your message contained {reminder.Message.Length} characters.";
             }
 
+            //  if (reminder owner is blacklisted by recipient)
+            //  {
+            //      return error message stating that the recipient has blacklisted them, so the reminder can't be sent
+            //  }
+
             try
             {
                 await _service.AddReminderAsync(reminder);
@@ -87,22 +120,22 @@ namespace MiraBot.Miraminders
             {
                 return "I couldn't add your reminder. It either contained typos, was missing information, or was too complex for me. Sorry!";
             }
-            Console.WriteLine($"reminder.RecipientId is \"{reminder.RecipientId}\".");
-            Console.WriteLine($"reminder.DateTime is \"{reminder.DateTime}\".");
-            Console.WriteLine($"reminder.Message is \"{reminder.Message}\".");
-            Console.WriteLine($"reminder.IsRecurring is \"{reminder.IsRecurring}\".");
-            Console.WriteLine($"InSeconds: {reminder.InSeconds}");
-            Console.WriteLine($"InMinutes: {reminder.InMinutes}");
-            Console.WriteLine($"InHours: {reminder.InHours}");
-            Console.WriteLine($"InDays: {reminder.InDays}");
-            Console.WriteLine($"InWeeks: {reminder.InWeeks}");
-            Console.WriteLine($"InMonths: {reminder.InMonths}");
-            Console.WriteLine($"InYears: {reminder.InYears}");
+
             await _reminderCache.RefreshCacheAsync();
-            return "Got it, your reminder has been saved!";
+
+            if (reminder.IsRecurring)
+            {
+                var frequency = GetRecurringReminderFrequency(reminder);
+                return $"Got it! Your reminder will go off every {frequency}. The next reminder will be sent on {DateOnly.FromDateTime(reminder.DateTime)} at {_service.ConvertUtcToUserTime(TimeOnly.FromDateTime(reminder.DateTime), owner.Timezone)}.";
+            }
+            else
+            {
+                return $"Got it, your reminder has been saved! It will go off on {DateOnly.FromDateTime(reminder.DateTime)} at {_service.ConvertUtcToUserTime(TimeOnly.FromDateTime(reminder.DateTime), owner.Timezone)}.";
+            }
         }
 
-        private async Task<DateTime?> GetUserSpecifiedDateTimeAsync(User owner, Reminder reminder)
+
+        private DateTime? GetUserSpecifiedDateTimeAsync(User owner, Reminder reminder)
         {
             TimeOnly? time = null;
 
@@ -157,7 +190,7 @@ namespace MiraBot.Miraminders
                 completeInput.RemoveAt(0);
                 return ownerId;
             }
-            // if the first word isn't "me", then run each word in the reminder input against the database to see if it contains a user
+            // if the first word isn't "me", then run each word in the reminder input against the users cache to see if it contains a user
 
             int index = 0;
             foreach (var word in completeInput)
@@ -199,11 +232,15 @@ namespace MiraBot.Miraminders
 
 
             var cleanedInputs = RemoveDateSuffix(inputs);
+            
             if (DateOnly.TryParse(cleanedInputs, out var date))
             {
                 int removeIndex = owner.UsesAmericanDateFormat.Value ? index + 1 : index - 1;
-                completeInput.RemoveAt(removeIndex);
-                completeInput.RemoveAt(index);
+                var toRemove = new List<int> { index, removeIndex }.OrderByDescending(m => m);
+                foreach (var element in toRemove)
+                {
+                    completeInput.RemoveAt(element);
+                }
                 return date;
             }
 
@@ -238,7 +275,8 @@ namespace MiraBot.Miraminders
             TimeOnly time = new();
             var index = 0;
             var timeIndex = -1;
-            List<int> removeRange = new();
+            bool timeFound = false;
+            List<int> removeRange = [];
             
             foreach (var word in completeInput)
             {
@@ -253,12 +291,12 @@ namespace MiraBot.Miraminders
                         removeRange.Add(index + 1);
                     }
                     // if AM/PM isn't found, then the time is assumed to be in 12h time and the element that can be parsed is removed. 
+                    timeFound = true;
                     removeRange.Add(index);
                     break;
                 }
                 index++;
             }
-            // I don't really remember why I have this separated out into an if-else statement...
             if (timeIndex > -1)
             {
                 completeInput[timeIndex] = $"{completeInput[timeIndex]}{completeInput[timeIndex + 1]}";
@@ -277,15 +315,11 @@ namespace MiraBot.Miraminders
                 }
             }
             
-            // if time is still the default value, then this method was not able to parse anything from completeInput, 
-            // and therefore should return null. 
-            // actually, this doesn't work very well because what if the user wants 00:00:00? Then it'll return null, even tho
-            // that's not what we want. Need to find a better way to do this
-            if (time == TimeOnly.MinValue)
+            if (!timeFound)
             {
                 return null;
             }
-            // if it's not the default value, then a valid time was found and needs to be converted to UTC and returned. 
+
             var utcTime = _service.ConvertUserTimeToUtc(time, owner.Timezone);
             if (utcTime < DateTime.UtcNow)
             {
@@ -294,7 +328,7 @@ namespace MiraBot.Miraminders
             return utcTime;
         }
 
-        private DateTime GetTimeFromNow(Reminder reminder)
+        private DateTime? GetTimeFromNow(Reminder reminder)
         {
             var dateTime = DateTime.UtcNow;
             TimeFrame result = new();
@@ -302,6 +336,7 @@ namespace MiraBot.Miraminders
             bool hasMatch = false;
             bool hasTimeFrame = false;
             int index = 0;
+            List<int> removeRange = [];
             do
             {
                 hasMatch = false;
@@ -321,13 +356,17 @@ namespace MiraBot.Miraminders
                 }
                 if (hasMatch && index > 0 && int.TryParse(completeInput[index - 1], out timeframeValue))
                 {
-                    completeInput.RemoveAt(index);
-                    completeInput.RemoveAt(index - 1);
+                    removeRange.Add(index);
+                    removeRange.Add(index - 1);
+                    if (index - 2 >= 0 && keywords.Contains(completeInput[index - 2]))
+                    {
+                        removeRange.Add(index - 2);
+                    }
                 }
                 else if (hasMatch)
                 {
                     timeframeValue = 1;
-                    completeInput.RemoveAt(index);
+                    removeRange.Add(index);
                 }
 
                 // fill in time frame column for reminder even if the reminder isn't recurring. 
@@ -369,44 +408,155 @@ namespace MiraBot.Miraminders
                         default:
                             break;
                     }
-
+                    removeRange = removeRange.OrderByDescending(x => x).ToList();
+                    foreach (var element in removeRange)
+                    {
+                        completeInput.RemoveAt(element);
+                    }
                     index = 0;
+                    removeRange.Clear();
                 }
             }
             while (hasMatch);
 
             if (!hasTimeFrame)
             {
-                dateTime = DateTime.MinValue;
+                return null;
             }
-            reminder.DateTime = dateTime;
             return dateTime;
         }
 
 
-        private bool IsRecurringReminder()
+        private Reminder CheckForRecurringReminder(Reminder reminder, User owner)
         {
             int index = 0;
+            DayOfWeek userDay = GetUserDayOfWeek(owner);
+            DayOfWeek specifiedDay = new();
+            bool isDayOfWeek = false;
+            List<int> removeRange = [];
             foreach (var word in completeInput)
             {
                 if (word.Equals("every", StringComparison.OrdinalIgnoreCase))
                 {
-                    completeInput.RemoveAt(index);
-                    return true;
+                    removeRange.Add(index);
+                    reminder.IsRecurring = true;
+                    index = 0;
+                    break;
                 }
                 index++;
             }
-            return false;
+
+            if (reminder.IsRecurring)
+            {
+                foreach (var word in completeInput)
+                {
+                    if (Enum.TryParse(word, true, out specifiedDay))
+                    {
+                        isDayOfWeek = true;
+                        removeRange.Add(index);
+                        break;
+                    }
+                    index++;
+                }
+
+                if (isDayOfWeek)
+                {
+                    int daysFromNow = (int)specifiedDay - (int)userDay;
+                    reminder.DateTime = _service.ConvertUtcToUserTime(TimeOnly.FromDateTime(DateTime.UtcNow), owner.Timezone).AddDays(daysFromNow);
+                    if (int.TryParse(completeInput[index - 1], out int timeFrameValue))
+                    {
+                        if (reminder.DateTime < _service.ConvertUtcToUserTime(TimeOnly.FromDateTime(DateTime.UtcNow), owner.Timezone))
+                        {
+                            reminder.DateTime = reminder.DateTime.AddDays(7);
+                        }
+                        reminder.InWeeks = timeFrameValue;
+                        removeRange.Add(index - 1);
+                    }
+                    else if (completeInput[index - 1].Equals("next", StringComparison.OrdinalIgnoreCase))
+                    {
+                        reminder.DateTime = reminder.DateTime.AddDays(7);
+                        reminder.InWeeks = 1;
+                        removeRange.Add(index - 1);
+                    }
+                    else if (completeInput[index - 1].Equals("other", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (reminder.DateTime < _service.ConvertUtcToUserTime(TimeOnly.FromDateTime(DateTime.UtcNow), owner.Timezone))
+                        {
+                            reminder.DateTime = reminder.DateTime.AddDays(7);
+                        }
+                        reminder.DateTime = reminder.DateTime.AddDays(14);
+                        reminder.InWeeks = 2;
+                        removeRange.Add(index - 1);
+                    }
+                    else
+                    {
+                        if (reminder.DateTime < _service.ConvertUtcToUserTime(TimeOnly.FromDateTime(DateTime.UtcNow), owner.Timezone))
+                        {
+                            reminder.DateTime = reminder.DateTime.AddDays(7);
+                        }
+                        reminder.InWeeks = 1;
+                    }
+                }
+                // logic to update reminder with frequency at which reminder should be sent 
+                // need to check for recurring syntax: "every 3rd Saturday" 
+                // need to check for recurring syntax: "21st of every month" 
+                // check for stuff like "every year on September 2nd that it's so-and-so's birthday"
+                // if "every year" but no date, do a year from current date 
+                // if "every <date>", make 1st DateTime for that date and then add a year
+                // if "21st of every month"....well, that's self-explanatory. 
+            }
+            else
+            {
+                return reminder;
+            }
+
+            removeRange = removeRange.OrderByDescending(x => x).ToList();
+            foreach (var element in removeRange)
+            {
+                completeInput.RemoveAt(element);
+            }
+
+            return reminder;
         }
 
         private TimeOnly GetDefaultUtcTime(User owner)
         {
+            // this isn't working properly. It's converting to the wrong local time
             var timezone = TimeZoneInfo.FindSystemTimeZoneById(owner.Timezone);
             var localDateTime = DateTime.Today.Add(defaultTime.ToTimeSpan());
             var userLocalDateTime = TimeZoneInfo.ConvertTime(localDateTime, timezone);
             var utcDateTime = TimeZoneInfo.ConvertTimeToUtc(userLocalDateTime, timezone);
             var utcTimeOnly = TimeOnly.FromDateTime(utcDateTime);
             return utcTimeOnly;
+        }
+
+        private DayOfWeek GetUserDayOfWeek(User owner)
+        {
+            TimeZoneInfo userTimeZone = TimeZoneInfo.FindSystemTimeZoneById(owner.Timezone);
+            DateTime utcNow = DateTime.UtcNow;
+            DateTime userDateTime = TimeZoneInfo.ConvertTimeFromUtc(utcNow, userTimeZone);
+            return userDateTime.DayOfWeek;
+        }
+
+
+        private void CleanCommasFromInput()
+        {
+            bool containsComma;
+
+            do
+            {
+                if (completeInput[0].Equals(","))
+                {
+                    completeInput.RemoveAt(0);
+                    containsComma = true;
+                }
+                else
+                {
+                    containsComma = false;
+                }
+            }
+
+            while (containsComma);
         }
 
         private void CleanReminderMessage()
@@ -420,7 +570,7 @@ namespace MiraBot.Miraminders
 
             while (containsKeyword)
             {
-                if (keywords.Any(keyword => string.Equals(completeInput[0], keyword, StringComparison.OrdinalIgnoreCase)))
+                if (Array.Exists(keywords, keyword => string.Equals(completeInput[0], keyword, StringComparison.OrdinalIgnoreCase)))
                 {
                     completeInput.RemoveAt(0);
                 }
@@ -438,6 +588,48 @@ namespace MiraBot.Miraminders
         private string RemoveDateSuffix(string input)
         {
             return Regex.Replace(input, @"(\d+)(st|nd|rd|th)", "$1");
+        }
+
+
+        private bool ReminderIsSpamAsync(Reminder reminder, User owner)
+        {
+            var recipientReminders = _reminderCache.GetCacheContentsByUser(reminder.RecipientId);
+
+            bool isSpam = recipientReminders.Exists(r => r.OwnerId == reminder.OwnerId && r.RecipientId != reminder.OwnerId &&
+            Math.Abs((r.DateTime - reminder.DateTime).TotalMinutes) <= 5);
+
+            return (reminder.IsRecurring
+                && reminder.OwnerId != reminder.RecipientId
+                && reminder.DateTime.AddMinutes(5) <= DateTime.UtcNow.AddMinutes(5)
+                && owner.UserName != "askylis"
+                || reminder.OwnerId != reminder.RecipientId
+                && owner.UserName != "askylis"
+                && isSpam);
+        }
+
+
+        private string GetRecurringReminderFrequency(Reminder reminder)
+        {
+            List<string> frequencyList = [];
+
+            if (reminder.InYears > 0)
+                frequencyList.Add($"{reminder.InYears} year{(reminder.InYears > 1 ? "s" : "")}");
+            if (reminder.InMonths > 0)
+                frequencyList.Add($"{reminder.InMonths} month{(reminder.InMonths > 1 ? "s" : "")}");
+            if (reminder.InWeeks > 0)
+                frequencyList.Add($"{reminder.InWeeks} week{(reminder.InWeeks > 1 ? "s" : "")}");
+            if (reminder.InDays > 0)
+                frequencyList.Add($"{reminder.InDays} day{(reminder.InDays > 1 ? "s" : "")}");
+            if (reminder.InHours > 0)
+                frequencyList.Add($"{reminder.InHours} hour{(reminder.InHours > 1 ? "s" : "")}");
+            if (reminder.InMinutes > 0)
+                frequencyList.Add($"{reminder.InMinutes} minute{(reminder.InMinutes > 1 ? "s" : "")}");
+            if (reminder.InSeconds > 0)
+                frequencyList.Add($"{reminder.InSeconds} second{(reminder.InSeconds > 1 ? "s" : "")}");
+
+            string frequency = frequencyList.Count > 0 ? string.Join(", ", frequencyList) : "once";
+
+            return frequency;
         }
     }
 }

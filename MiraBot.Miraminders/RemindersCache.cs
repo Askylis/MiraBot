@@ -6,8 +6,8 @@ namespace MiraBot.Miraminders
 {
     public class RemindersCache : IRemindersCache
     {
-        private static List<Reminder> _cache = new();
-        private static List<Reminder> _toDelete = new();
+        private static List<Reminder> _cache = [];
+        private static List<Reminder> _toDelete = [];
 
         private readonly IMiramindersRepository _repository;
         private readonly ILogger<RemindersCache> _logger;

@@ -75,13 +75,13 @@ namespace MiraBot.Miraminders
                 {
                     if (reminder.IsRecurring)
                     {
-                        await dm.SendMessageAsync($"You have a reminder from {owner.UserName}! The message attached to this reminder is: \"{reminder.Message}\".\nThis reminder will go off again at {reminder.DateTime}. You can cancel reminders with ``/cancel.``");
+                        await dm.SendMessageAsync($"You have a reminder from {owner.UserName}! The message attached to this reminder is: \n\n**\"{reminder.Message}\"**.\nThis reminder will go off again at {reminder.DateTime}. You can cancel reminders with ``/cancel.``");
                     }
                     else
                     {
-                        await dm.SendMessageAsync($"You have a reminder from {owner.UserName}! The message attached to this reminder is: \"{reminder.Message}\"");
+                        await dm.SendMessageAsync($"You have a reminder from {owner.UserName}! The message attached to this reminder is: \n\n**\"{reminder.Message}\"**");
                     }
-                    await ownerDm.SendMessageAsync($"I just sent your reminder to {recipient.Username}! Your reminder contained the following message: \"{reminder.Message}\"");
+                    await ownerDm.SendMessageAsync($"I just sent your reminder to {recipient.Username}! Your reminder contained the following message: \n\n**\"{reminder.Message}\"**");
                 }
                 catch
                 {

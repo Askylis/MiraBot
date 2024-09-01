@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Discord;
+using Microsoft.Extensions.Logging;
 using MiraBot.Common;
 using MiraBot.DataAccess;
 using MiraBot.DataAccess.Repositories;
@@ -102,7 +103,8 @@ namespace MiraBot.Miraminders
         public DateTime ConvertUserTimeToUtc(TimeOnly requestedTime, string userTimezoneId)
         {
             var userTimezone = TimeZoneInfo.FindSystemTimeZoneById(userTimezoneId);
-            var dateTime = _dateTimeProvider.Today.Add(requestedTime.ToTimeSpan());
+            var userDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(_dateTimeProvider.UtcNow, userTimezone));
+            var dateTime = userDate.ToDateTime(TimeOnly.MinValue).Add(requestedTime.ToTimeSpan());
             var utcTime = TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(dateTime, DateTimeKind.Unspecified), userTimezone);
             return utcTime;
         }
@@ -146,17 +148,20 @@ namespace MiraBot.Miraminders
             return fileName;
         }
 
-        public List<string> SendLongMessage(List<Reminder> reminders)
+        public async Task<List<string>> SendLongMessage(List<Reminder> reminders)
         {
             var response = new StringBuilder();
             var messages = new List<string>();
             int counter = 1;
+            var owner = await _repository.GetUserByUserIdAsync(reminders[0].OwnerId);
 
             foreach (var reminder in reminders)
             {
                 string currentReminder;
-
-                currentReminder = $"{counter}. Reminder message: {reminder.Message}\n\tReminder set for: {reminder.DateTime}\n\n";
+                var userTime = TimeOnly.FromDateTime(ConvertUtcToUserTime(TimeOnly.FromDateTime(reminder.DateTime), owner.Timezone));
+                var userDate = DateOnly.FromDateTime(reminder.DateTime);
+                var userDateTime = userDate.ToDateTime(userTime);
+                currentReminder = $"{counter}. **\"{reminder.Message}\"** is set for: **{userDateTime}**\n\n";
 
                 if ((response.Length + currentReminder.Length) > 2000)
                 {

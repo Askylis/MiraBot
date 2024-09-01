@@ -102,9 +102,10 @@ namespace MiraBot.Modules
         public async Task FindReminderAsync(string word)
         {
             await RespondAsync("Lemme look this up...");
+            await _reminderService.EnsureUserExistsAsync(Context.User.Id, Context.User.Username);
             var user = await _reminderService.GetUserByDiscordIdAsync(Context.User.Id);
             var reminders = _cache.GetCacheContentsByUser(user.UserId);
-            List<Reminder> matchingReminders = new();
+            List<Reminder> matchingReminders = [];
             if (reminders.Count == 0)
             {
                 await ReplyAsync("It doesn't look like you have any active reminders!");
@@ -123,12 +124,7 @@ namespace MiraBot.Modules
                 return;
             }
             await ReplyAsync($"I found {matchingReminders.Count} reminders!");
-            int counter = 1;
-            foreach (var reminder in matchingReminders)
-            {
-                await ReplyAsync($"{counter}. **\"{reminder.Message}\"** set for **{reminder.DateTime}**");
-                counter++;
-            }
+            await SendLongMessageAsync(matchingReminders);
         }
 
 
@@ -164,20 +160,12 @@ namespace MiraBot.Modules
                     await GenerateSelectMenuAsync(options,
                         "How would you write out the date \"August 30th\"?",
                         "select-menu",
-                        string.Empty,
+                        "Select this option",
                         Context
                         );
                     var selection = result;
                     result = -1;
-                    bool isAmerican;
-                    if (selection == 0)
-                    {
-                        isAmerican = false;
-                    }
-                    else
-                    {
-                        isAmerican = true;
-                    }
+                    bool isAmerican = (selection == 0);
 
                     await _reminderService.AddDateFormatToUserAsync(owner.DiscordId, isAmerican);
                 }
@@ -237,7 +225,7 @@ namespace MiraBot.Modules
 
         public async Task SendLongMessageAsync(List<Reminder> reminders)
         {
-            var messages = _reminderService.SendLongMessage(reminders);
+            var messages = await _reminderService.SendLongMessage(reminders);
 
             foreach (var message in messages)
             {
