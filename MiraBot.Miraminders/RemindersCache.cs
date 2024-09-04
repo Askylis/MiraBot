@@ -21,7 +21,7 @@ namespace MiraBot.Miraminders
         public async Task RefreshCacheAsync()
         {
             _logger.LogInformation("Refreshing reminders cache...");
-            await Task.WhenAll(_toDelete.Where(d => !d.IsRecurring).Select(reminder => _repository.MarkCompletedAsync(reminder.ReminderId)));
+            await Task.WhenAll(_toDelete.Where(d => !d.IsRecurring).Select(reminder => _repository.RemoveReminderAsync(reminder.ReminderId)));
             _toDelete.Clear();
             _cache.Clear();
             var reminders = await _repository.GetUpcomingRemindersAsync();

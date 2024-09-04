@@ -92,7 +92,7 @@ namespace MiraBot.Miraminders
         public async Task CancelReminderAsync(Reminder reminder)
         {
             reminder.IsRecurring = false;
-            await _repository.MarkCompletedAsync(reminder.ReminderId);
+            await _repository.RemoveReminderAsync(reminder.ReminderId);
         }
 
         public async Task FindReminderAsync(Reminder reminder)

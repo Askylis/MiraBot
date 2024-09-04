@@ -40,17 +40,6 @@ namespace MiraBot.DataAccess.Repositories
             }
         }
 
-        public async Task DeleteReminderAsync(Reminder reminder)
-        {
-            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
-            {
-                var original = await context.Reminders.FirstOrDefaultAsync(r => r.ReminderId == reminder.ReminderId)
-                    .ConfigureAwait(false);
-                context.Reminders.Remove(original);
-                await context.SaveChangesAsync()
-                    .ConfigureAwait(false);
-            }
-        }
 
         public async Task AddNewUserAsync(User user)
         {
@@ -72,7 +61,7 @@ namespace MiraBot.DataAccess.Repositories
             }
         }
 
-        public async Task MarkCompletedAsync(int reminderId)
+        public async Task RemoveReminderAsync(int reminderId)
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {

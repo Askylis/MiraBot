@@ -10,7 +10,7 @@
 
         Task<List<Reminder>> GetUpcomingRemindersAsync();
 
-        Task MarkCompletedAsync(int reminderId);
+        Task RemoveReminderAsync(int reminderId);
 
         Task<User?> GetUserByNameAsync(string userName);
 
@@ -20,7 +20,6 @@
 
         Task<User?> GetUserByUserIdAsync(int userId);
         Task UpdateReminderAsync(Reminder reminder);
-        Task DeleteReminderAsync(Reminder reminder);
         Task<List<UserNameAndId>> GetUserNamesAndIdsAsync();
     }
 }
