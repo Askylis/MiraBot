@@ -29,22 +29,13 @@ namespace MiraBot.Miraminders
         // This is almost done. It can handle most types of reminders. 
         // UPDATE: this is *NOT* almost done lol. It can't handle reminders like the following:
         // remind me every Monday and Friday to do this thing
-        // remind me every other Thursday to do this thing
-        // remind me next Friday to complete this task 
         // can't handle more complex reminders...for example, "remind me every day at 12:34" will detect that it's recurring, 
         // but will get the 12:34 and then build the reminder without detecting how much time there should be
         // between reminders. so it basically makes a one-off reminder...
         // I'll update it to handle reminders like that soon
-        // Currently can't clean keywords that occur *after* the intended reminder message. For example, if you send:
-        // remind me to go to the store in 5 hours and 5 minutes
-        // the reminder message will be "go to the store in and"
-        // need to fix that by checking for a keyword in the element before the number that's found before the timeframe
-        // "remind me *this* Monday" vs "remind me *next* Monday"
         // "remind me every August 15th that today is a good day" 
         // need to check to see if an input contains 2 separate reminders, 
         // e.g. "remind me every Monday and Friday to do this thing"
-        // commas aren't properly clearing. Mira can't understand "5 hours,", so I need to find a way to clean commas off of each input
-        // before scanning it
         public async Task<string> ParseReminderAsync(string input, ulong ownerId)
         {
             // splits the input into a list for easier management
@@ -448,26 +439,35 @@ namespace MiraBot.Miraminders
                 {
                     reminder = dayOfWeekResult;
                 }
-                var result = GetTimeFromNow(reminder);
+                var timeFromNow = GetTimeFromNow(reminder);
                 var dateResult = GetDateFromString(owner);
-                if (result is not null)
+                var numericDateResult = GetNumericDateFormat(owner.UsesAmericanDateFormat.Value);
+                if (timeFromNow is not null)
                 {
-                    reminder = result;
+                    reminder = timeFromNow;
                 }
 
                 else if (dateResult is not null)
                 {
                     var time = GetDefaultUtcTime(owner);
-                    reminder.DateTime = GetDateFromString(owner).Value.ToDateTime(time);
+                    reminder.DateTime = dateResult.Value.ToDateTime(time);
+                    if (reminder.DateTime < DateTime.UtcNow)
+                    {
+                        reminder.DateTime = reminder.DateTime.AddYears(1);
+                    }
                     reminder.InYears = 1;
                 }
 
                 // add in getting specified time 
 
-                else if (GetNumericDateFormat(owner.UsesAmericanDateFormat.Value) is not null)
+                else if (numericDateResult is not null)
                 {
                     var time = GetDefaultUtcTime(owner);
-                    reminder.DateTime = GetNumericDateFormat(owner.UsesAmericanDateFormat.Value).Value.ToDateTime(time);
+                    reminder.DateTime = numericDateResult.Value.ToDateTime(time);
+                    if (reminder.DateTime < DateTime.UtcNow)
+                    {
+                        reminder.DateTime = reminder.DateTime.AddYears(1);
+                    }
                     reminder.InYears = 1;
                 }
 
