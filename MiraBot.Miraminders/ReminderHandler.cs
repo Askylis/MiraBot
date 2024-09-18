@@ -10,17 +10,20 @@ namespace MiraBot.Miraminders
         private readonly TimeOnly defaultTime = new(17, 0);
         private List<string> completeInput;
         private static readonly string[] keywords = ["in", "on", "at", "every", "to", "that", "and", "from", "now", "a", "an", "next"];
-        private const int maxMessageLength = 100;
+        private const string devUserName = "askylis";
         private readonly RemindersCache _reminderCache;
         private readonly UsersCache _userCache;
+        private readonly ReminderOptions _options;
         public ReminderHandler(
             MiraminderService service,
             RemindersCache cache,
-            UsersCache usersCache)
+            UsersCache usersCache,
+            ReminderOptions options)
         {
             _service = service;
             _reminderCache = cache;
             _userCache = usersCache;
+            _options = options;
         }
 
         // This is almost done. It can handle most types of reminders. 
@@ -39,6 +42,11 @@ namespace MiraBot.Miraminders
             completeInput = input.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
 
             var owner = await _service.GetUserByDiscordIdAsync(ownerId);
+
+            if (owner.Reminders.Count >= _options.MaxReminderCount && owner.UserName != devUserName)
+            {
+                return $"You've reached the maximum allowed number off reminders ({_options.MaxReminderCount}). Please cancel a reminder before adding another.";
+            }
 
             // makes new reminder that can be modified
             var reminder = new Reminder
@@ -86,9 +94,9 @@ namespace MiraBot.Miraminders
                 reminder.Message = string.Join(" ", completeInput);
             }
 
-            if (reminder.Message.Length > maxMessageLength)
+            if (reminder.Message.Length > _options.MaxMessageLength)
             {
-                return $"I couldn't save your reminder because the attached message is too long. Max length for reminder messages is {maxMessageLength} characters, but your message contained {reminder.Message.Length} characters.";
+                return $"I couldn't save your reminder because the attached message is too long. Max length for reminder messages is {_options.MaxMessageLength} characters, but your message contained {reminder.Message.Length} characters.";
             }
 
             //  if (reminder owner is blacklisted by recipient)
@@ -632,9 +640,9 @@ namespace MiraBot.Miraminders
             return (reminder.IsRecurring
                 && reminder.OwnerId != reminder.RecipientId
                 && reminder.DateTime.AddMinutes(5) <= DateTime.UtcNow.AddMinutes(5)
-                && owner.UserName != "askylis"
+                && owner.UserName != devUserName
                 || reminder.OwnerId != reminder.RecipientId
-                && owner.UserName != "askylis"
+                && owner.UserName != devUserName
                 && isSpam);
         }
 

@@ -16,7 +16,6 @@ namespace MiraBot.Modules
         public static int result = -1;
         public const int selectMenuLimit = 24;
         private readonly IServiceProvider _serviceProvider;
-        internal const int maxMessageLength = 250;
 
         public MiramindersModule(
             InteractiveService interactive,

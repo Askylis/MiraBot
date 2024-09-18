@@ -18,7 +18,7 @@ var builder = Host.CreateApplicationBuilder(args);
 
 var configBuilder = new ConfigurationBuilder();
 configBuilder.AddEnvironmentVariables();
-configBuilder.AddJsonFile("appsettings.json", true);
+configBuilder.AddJsonFile("appsettings.json");
 configBuilder.AddUserSecrets<Program>();
 var config = configBuilder.Build();
 
@@ -38,6 +38,7 @@ builder.Services.AddHostedService<RemindersProcessingService>();
 builder.Services.AddHostedService<UsersRefreshService>();
 builder.Services.Configure<DiscordOptions>(config.GetSection("Discord"));
 builder.Services.Configure<DatabaseOptions>(config.GetSection("Database"));
+builder.Services.Configure<ReminderOptions>(config.GetSection("Reminders"));
 builder.Services.AddScoped<IGroceryAssistantRepository, GroceryAssistantRepository>();
 builder.Services.AddScoped<IMiramindersRepository, MiramindersRepository>();
 builder.Services.AddSingleton<IRemindersCache, RemindersCache>();
