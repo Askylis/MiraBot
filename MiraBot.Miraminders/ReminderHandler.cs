@@ -1,8 +1,5 @@
-﻿using Discord.WebSocket;
-using MiraBot.DataAccess;
-using System;
+﻿using MiraBot.DataAccess;
 using System.Globalization;
-using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
 
 namespace MiraBot.Miraminders
@@ -442,6 +439,8 @@ namespace MiraBot.Miraminders
                 var timeFromNow = GetTimeFromNow(reminder);
                 var dateResult = GetDateFromString(owner);
                 var numericDateResult = GetNumericDateFormat(owner.UsesAmericanDateFormat.Value);
+                var specifiedTime = GetSpecifiedTimeAsync(owner);
+
                 if (timeFromNow is not null)
                 {
                     reminder = timeFromNow;
@@ -456,9 +455,7 @@ namespace MiraBot.Miraminders
                         reminder.DateTime = reminder.DateTime.AddYears(1);
                     }
                     reminder.InYears = 1;
-                }
-
-                // add in getting specified time 
+                } 
 
                 else if (numericDateResult is not null)
                 {
