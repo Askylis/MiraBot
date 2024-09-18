@@ -10,7 +10,6 @@ namespace MiraBot.Miraminders
         private readonly TimeOnly defaultTime = new(17, 0);
         private List<string> completeInput;
         private static readonly string[] keywords = ["in", "on", "at", "every", "to", "that", "and", "from", "now", "a", "an", "next"];
-        private const string devUserName = "askylis";
         private readonly RemindersCache _reminderCache;
         private readonly UsersCache _userCache;
         private readonly ReminderOptions _options;
@@ -26,24 +25,15 @@ namespace MiraBot.Miraminders
             _options = options;
         }
 
-        // This is almost done. It can handle most types of reminders. 
-        // UPDATE: this is *NOT* almost done lol. It can't handle reminders like the following:
-        // remind me every Monday and Friday to do this thing
-        // can't handle more complex reminders...for example, "remind me every day at 12:34" will detect that it's recurring, 
-        // but will get the 12:34 and then build the reminder without detecting how much time there should be
-        // between reminders. so it basically makes a one-off reminder...
-        // I'll update it to handle reminders like that soon
-        // "remind me every August 15th that today is a good day" 
-        // need to check to see if an input contains 2 separate reminders, 
-        // e.g. "remind me every Monday and Friday to do this thing"
         public async Task<string> ParseReminderAsync(string input, ulong ownerId)
         {
+            // convert "my" and "me" in reminder message to "your" and "you"?
             // splits the input into a list for easier management
             completeInput = input.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
 
             var owner = await _service.GetUserByDiscordIdAsync(ownerId);
 
-            if (owner.Reminders.Count >= _options.MaxReminderCount && owner.UserName != devUserName)
+            if (owner.Reminders.Count >= _options.MaxReminderCount && owner.UserName != _options.DevUserName)
             {
                 return $"You've reached the maximum allowed number off reminders ({_options.MaxReminderCount}). Please cancel a reminder before adding another.";
             }
@@ -640,9 +630,9 @@ namespace MiraBot.Miraminders
             return (reminder.IsRecurring
                 && reminder.OwnerId != reminder.RecipientId
                 && reminder.DateTime.AddMinutes(5) <= DateTime.UtcNow.AddMinutes(5)
-                && owner.UserName != devUserName
+                && owner.UserName != _options.DevUserName
                 || reminder.OwnerId != reminder.RecipientId
-                && owner.UserName != devUserName
+                && owner.UserName != _options.DevUserName
                 && isSpam);
         }
 
