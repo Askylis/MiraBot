@@ -47,8 +47,7 @@ namespace MiraBot.Miraminders
 
         public List<Reminder> GetCacheContentsByUser(int userId)
         {
-            var cache = _cache.Where(r => r.RecipientId == userId || r.OwnerId == userId).ToList();
-            return cache;
+            return _cache.Where(r => r.RecipientId == userId || r.OwnerId == userId).ToList();
         }
     }
 }

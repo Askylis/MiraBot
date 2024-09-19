@@ -136,8 +136,7 @@ namespace MiraBot.DataAccess.Repositories
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
-                var users = context.Users.Select(u => new UserNameAndId(u.UserName, u.UserId)).ToList();
-                return users;
+                return await context.Users.Select(u => new UserNameAndId(u.UserName, u.UserId)).ToListAsync();
             }
         }
 
