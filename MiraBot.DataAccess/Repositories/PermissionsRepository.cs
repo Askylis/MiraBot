@@ -22,17 +22,47 @@ namespace MiraBot.DataAccess.Repositories
 
         public async Task UpdateUserPermissionsAsync()
         {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
 
+            }
         }
 
-        public async Task AddNewPermission()
+        public async Task AddNewPermissionAsync(Permission permission)
         {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                await context.Permissions.AddAsync(permission)
+                    .ConfigureAwait(false);
+                await context.SaveChangesAsync()
+                    .ConfigureAwait(false);
+            }
+        }
 
+        public async Task<Permission> FindByNameAsync(string name)
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                return await context.Permissions.FirstOrDefaultAsync(p => p.Name == name)
+                    .ConfigureAwait(false);
+            }
+        }
+
+        public async Task<Permission> FindByIdAsync(int id)
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                return await context.Permissions.FirstOrDefaultAsync(p => p.PermissionId == id)
+                    .ConfigureAwait(false);
+            }
         }
 
         public async Task DeletePermissionAsync()
         {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
 
+            }
         }
 
         public async Task<List<Permission>> GetAllAsync()
