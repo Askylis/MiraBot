@@ -41,6 +41,8 @@ builder.Services.Configure<DatabaseOptions>(config.GetSection("Database"));
 builder.Services.Configure<ReminderOptions>(config.GetSection("Reminders"));
 builder.Services.AddScoped<IGroceryAssistantRepository, GroceryAssistantRepository>();
 builder.Services.AddScoped<IMiramindersRepository, MiramindersRepository>();
+builder.Services.AddScoped<PermissionsRepository>();
+builder.Services.AddScoped<UsersRepository>();
 builder.Services.AddSingleton<IRemindersCache, RemindersCache>();
 builder.Services.AddSingleton<UsersCache>();
 builder.Services.AddTransient<GroceryAssistantComponents>();

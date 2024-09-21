@@ -46,7 +46,6 @@ namespace MiraBot.Modules
             await ReplyAsync(await handler.ParseReminderAsync(input, Context.User.Id));
         }
 
-
         [SlashCommand("remindcancel", "Cancel a reminder that either you own, or that someone sent to you.")]
         public async Task CancelReminderAsync()
         {
