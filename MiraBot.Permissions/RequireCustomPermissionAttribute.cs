@@ -1,27 +1,24 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using Discord.Commands;
-using Discord.WebSocket;
-using MiraBot.DataAccess.Repositories;
+﻿using Discord.Commands;
 
 namespace MiraBot.Permissions
 {
     public class RequireCustomPermissionAttribute : PreconditionAttribute
     {
         private readonly int _permissionId;
-        private readonly PermissionsRepository _permissionsRepository;
-        private readonly UsersRepository _usersRepository;
-        public RequireCustomPermissionAttribute(int permissionId, PermissionsRepository repository, UsersRepository usersRepository)
+        public RequireCustomPermissionAttribute(int permissionId)
         {
             _permissionId = permissionId;
-            _permissionsRepository = repository;
-            _usersRepository = usersRepository;
         }
         public override async Task<PreconditionResult> CheckPermissionsAsync(ICommandContext context, CommandInfo command, IServiceProvider services)
         {
-            var owner = await _usersRepository.GetUserByDiscordIdAsync(context.User.Id);
-            if (await _permissionsRepository.UserHasPermission(owner.UserId, _permissionId))
+            var handler = (PermissionsHandler)services.GetService(typeof(PermissionsHandler));
+            if (handler == null)
+            {
+                return PreconditionResult.FromError("PermissionsHandler not available.");
+            }
+
+            var owner = await handler.FindUserByDiscordIdAsync(context.User.Id);
+            if (await handler.UserHasPermissionAsync(owner.UserId, _permissionId))
             {
                 return await Task.FromResult(PreconditionResult.FromSuccess());
             }

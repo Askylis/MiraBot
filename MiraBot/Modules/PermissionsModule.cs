@@ -1,50 +1,72 @@
-﻿using Discord;
-using Discord.Interactions;
+﻿using Discord.Interactions;
 using Fergun.Interactive;
-using Microsoft.Extensions.DependencyInjection;
-using MiraBot.DataAccess.Repositories;
+using MiraBot.DataAccess;
 using MiraBot.Permissions;
-using System.Text;
 
 namespace MiraBot.Modules
 {
     public class PermissionsModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly InteractiveService _interactive;
-        private readonly PermissionsRepository _repository;
         private readonly PermissionsHandler _handler;
+        private readonly ModuleHelpers _helpers;
 
-        public PermissionsModule(InteractiveService interactive, PermissionsRepository repository, PermissionsHandler handler)
+        public PermissionsModule(InteractiveService interactive, PermissionsHandler handler, ModuleHelpers helpers)
         {
             _interactive = interactive;
-            _repository = repository;
             _handler = handler;
+            _helpers = helpers;
         }
 
+        [RequireCustomPermission(1)]
         [SlashCommand("addpermission", "Add a permission to a user.")]
-        public async Task AddPermissionAsync()
+        public async Task AddPermissionAsync(string username = null)
         {
-
+            User recipient;
+            var permissions = await _handler.GetAllAsync();
+            if (username is null)
+            {
+                recipient = await _handler.FindUserByDiscordIdAsync(Context.User.Id);
+            }
+            else
+            {
+                recipient = await _handler.FindUserByNameAsync(username);
+                if (recipient is null)
+                {
+                    await RespondAsync("Could not find a user with that username.");
+                    return;
+                }
+            }
+            
+            await RespondAsync($"Which permission would you like to add to user **\"{recipient.UserName}\"**?");
+            await ReplyAsync(await _handler.ListAllAsync());
+            int selection = await _helpers.GetValidNumberAsync(1, permissions.Count, Context);
+            await _handler.AddPermissionToUserAsync(recipient, permissions[selection - 1]);
+            await ReplyAsync($"User **{recipient.UserName}** has been given permission **{permissions[selection - 1].Name}**.");
         }
 
+        [RequireCustomPermission(1)]
         [SlashCommand("removepermission", "Remove a permission from a user.")]
         public async Task RemovePermissionAsync()
         {
 
         }
 
+        [RequireCustomPermission(1)]
         [SlashCommand("ban", "Blacklist a user from using Mira.")]
         public async Task BanUserAsync()
         {
 
         }
 
+        [RequireCustomPermission(1)]
         [SlashCommand("unban", "Unban a user who was previously blacklisted from using Mira.")]
         public async Task UnbanUserAsync()
         {
 
         }
 
+        [RequireCustomPermission(1)]
         [SlashCommand("newpermission", "Add a new permission to the database.")]
         public async Task AddNewPermissionAsync(string permissionName, string description)
         {
@@ -54,37 +76,33 @@ namespace MiraBot.Modules
             await FollowupAsync($"Added permission \"**{permissionName}**\" with permissionId **{permission.PermissionId}**.");
         }
 
+        [RequireCustomPermission(1)]
         [SlashCommand("deletepermission", "Deletes an existing permission from the database.")]
         public async Task DeleteExistingPermissionAsync()
         {
 
         }
 
+        [RequireCustomPermission(1)]
         [SlashCommand("editpermission", "Edit information about an existing permission.")]
         public async Task EditPermissionAsync()
         {
 
         }
 
+        [RequireCustomPermission(1)]
         [SlashCommand("listpermissions", "Provides a list of all available permissions.")]
         public async Task ListPermissionsAsync()
         {
             await DeferAsync();
-            var permissions = await _repository.GetAllAsync();
+            var permissions = await _handler.GetAllAsync();
             if (permissions.Count == 0)
             {
                 await FollowupAsync("There are no permissions currently saved.");
                 return;
             }
-            var sb = new StringBuilder();
-            int counter = 0;
-            foreach (var permission in permissions)
-            {
-                sb.Append($"{counter}. Permission name: **{permission.Name}** - Permission ID: **{permission.PermissionId}**");
-                counter++;
-            }
 
-            await FollowupAsync(sb.ToString());
+            await FollowupAsync(await _handler.ListAllAsync());
         }
     }
 }

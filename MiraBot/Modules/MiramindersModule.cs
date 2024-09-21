@@ -213,7 +213,7 @@ namespace MiraBot.Modules
             else
             {
                 await SendLongMessageAsync(messages);
-                selection = await _helpers.GetValidNumberAsync(0, messages.Count);
+                selection = await _helpers.GetValidNumberAsync(0, messages.Count, Context);
                 selection--;
             }
 

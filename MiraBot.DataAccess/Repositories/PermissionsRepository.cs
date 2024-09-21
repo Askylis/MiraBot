@@ -14,18 +14,10 @@ namespace MiraBot.DataAccess.Repositories
             _usersRepository = usersRepository;
         }
 
-        public async Task<bool> UserHasPermission(int userId, int permissionId)
+        public async Task<bool> UserHasPermissionAsync(int userId, int permissionId)
         {
             var user = await _usersRepository.GetUserByUserIdAsync(userId);
             return user.Permissions.Any(p => p.PermissionId == permissionId);
-        }
-
-        public async Task UpdateUserPermissionsAsync()
-        {
-            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
-            {
-
-            }
         }
 
         public async Task AddNewPermissionAsync(Permission permission)

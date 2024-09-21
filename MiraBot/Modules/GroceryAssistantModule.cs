@@ -189,7 +189,7 @@ namespace MiraBot.Modules
             var meals = await _groceryAssistant.GetAllMealsAsync(Context.User.Id);
             var mealCount = meals.Count;
             await RespondAsync($"Okay, tell me how many meals you want! You have {mealCount} total meals. You can also select \"0\" to cancel this command.");
-            int numberOfMeals = await _helpers.GetValidNumberAsync(0, mealCount);
+            int numberOfMeals = await _helpers.GetValidNumberAsync(0, mealCount, Context);
             int index = 0;
 
             if (numberOfMeals == 0)
@@ -312,7 +312,7 @@ namespace MiraBot.Modules
             else
             {
                 await SendLongMessageAsync(meals: meals);
-                selection = await _helpers.GetValidNumberAsync(0, meals.Count);
+                selection = await _helpers.GetValidNumberAsync(0, meals.Count, Context);
                 selection--;
             }
 

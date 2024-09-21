@@ -11,14 +11,14 @@ namespace MiraBot.Modules
             _interactiveService = interactiveService;
         }
 
-        public async Task<int> GetValidNumberAsync(int minNumber, int maxNumber)
+        public async Task<int> GetValidNumberAsync(int minNumber, int maxNumber, SocketInteractionContext context)
         {
             int userChoice = 0;
             bool isValid = false;
 
             while (!isValid)
             {
-                var input = await _interactiveService.NextMessageAsync(x => x.Author.Id == Context.User.Id && x.Channel.Id == Context.Channel.Id,
+                var input = await _interactiveService.NextMessageAsync(x => x.Author.Id == context.User.Id && x.Channel.Id == context.Channel.Id,
             timeout: TimeSpan.FromMinutes(2));
 
                 if (!input.IsSuccess)
