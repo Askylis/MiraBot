@@ -18,7 +18,6 @@ public partial class MiraBotContext : DbContext
     {
     }
 
-
     public virtual DbSet<Ingredient> Ingredients { get; set; }
 
     public virtual DbSet<Meal> Meals { get; set; }
@@ -92,6 +91,9 @@ public partial class MiraBotContext : DbContext
         {
             entity.Property(e => e.Description)
                 .HasMaxLength(100)
+                .IsUnicode(false);
+            entity.Property(e => e.Name)
+                .HasMaxLength(32)
                 .IsUnicode(false);
         });
 
