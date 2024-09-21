@@ -2,17 +2,20 @@
 using Discord.Interactions;
 using Fergun.Interactive;
 using Microsoft.Extensions.DependencyInjection;
-using MiraBot.DataAccess;
+using MiraBot.DataAccess.Repositories;
+using System.Text;
 
 namespace MiraBot.Modules
 {
     public class PermissionsModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly InteractiveService _interactive;
+        private readonly PermissionsRepository _repository;
 
-        public PermissionsModule(InteractiveService interactive)
+        public PermissionsModule(InteractiveService interactive, PermissionsRepository repository)
         {
             _interactive = interactive;
+            _repository = repository;
         }
 
         [SlashCommand("addpermission", "Add a permission to a user.")]
@@ -49,6 +52,19 @@ namespace MiraBot.Modules
         public async Task DeleteExistingPermissionAsync()
         {
 
+        }
+
+        [SlashCommand("listpermissions", "Provides a list of all available permissions.")]
+        public async Task ListPermissionsAsync()
+        {
+            var permissions = await _repository.GetAllAsync();
+            var sb = new StringBuilder();
+            int counter = 0;
+            foreach (var permission in permissions)
+            {
+                sb.Append($"{counter} {permission.Name}");
+                counter++;
+            }
         }
     }
 }

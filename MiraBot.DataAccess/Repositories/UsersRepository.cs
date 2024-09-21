@@ -6,9 +6,9 @@ namespace MiraBot.DataAccess.Repositories
     public class UsersRepository
     {
         private readonly DatabaseOptions _databaseOptions;
-        public UsersRepository(DatabaseOptions databaseOptions)
+        public UsersRepository(IOptions<DatabaseOptions> databaseOptions)
         {
-            _databaseOptions = databaseOptions;
+            _databaseOptions = databaseOptions.Value;
         }
 
         public async Task AddNewUserAsync(User user)
