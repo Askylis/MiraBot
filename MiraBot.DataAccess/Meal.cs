@@ -13,6 +13,8 @@ public partial class Meal
 
     public DateOnly? Date { get; set; }
 
+    public bool IsDeleted { get; set; }
+
     public virtual ICollection<MealLog> MealLogs { get; set; } = new List<MealLog>();
 
     public virtual User Owner { get; set; } = null!;

@@ -85,17 +85,21 @@ namespace MiraBot.GroceryAssistance
             {
                 if (!line.StartsWith('\t'))
                 {
-                    currentMeal = new Meal();
-                    currentMeal.Date = ConvertToDate(line);
-                    currentMeal.Name = RemoveCurlyBraces(line);
-                    currentMeal.OwnerId = user.UserId;
+                    currentMeal = new Meal
+                    {
+                        Date = ConvertToDate(line),
+                        Name = RemoveCurlyBraces(line),
+                        OwnerId = user.UserId
+                    };
                     meals.Add(currentMeal);
                 }
                 else
                 {
-                    currentIngredient = new Ingredient();
-                    currentIngredient.Name = line.Trim();
-                    currentIngredient.OwnerId = user.UserId;
+                    currentIngredient = new Ingredient
+                    {
+                        Name = line.Trim(),
+                        OwnerId = user.UserId
+                    };
                     currentMeal.Ingredients.Add(currentIngredient);
                 }
             }

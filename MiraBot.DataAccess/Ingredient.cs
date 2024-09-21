@@ -11,6 +11,8 @@ public partial class Ingredient
 
     public string Name { get; set; } = null!;
 
+    public bool IsDeleted { get; set; }
+
     public virtual User Owner { get; set; } = null!;
 
     public virtual ICollection<Meal> Meals { get; set; } = new List<Meal>();

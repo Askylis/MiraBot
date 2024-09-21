@@ -213,7 +213,7 @@ namespace MiraBot.Modules
                 {
                     string removedMeal = selectedMeals[index].Name;
                     var newMeals = await _groceryAssistant.ReplaceMealAsync(selectedMeals, index, Context.User.Id);
-                    await ReplyAsync($"Removed **{removedMeal}** and added **{newMeals.Last().Name}**! Here's your updated meals list!\n");
+                    await ReplyAsync($"Removed **{removedMeal}** and added **{newMeals[newMeals.Count - 1].Name}**! Here's your updated meals list!\n");
                     await SendLongMessageAsync(meals: newMeals, sendIngredients: true);
                     selectedMeals = newMeals;
                 }

@@ -1,4 +1,7 @@
-﻿namespace MiraBot.DataAccess;
+﻿using System;
+using System.Collections.Generic;
+
+namespace MiraBot.DataAccess;
 
 public partial class Reminder
 {
