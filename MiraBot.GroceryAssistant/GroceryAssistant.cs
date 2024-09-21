@@ -1,4 +1,5 @@
-﻿using MiraBot.DataAccess;
+﻿using Microsoft.Extensions.Logging;
+using MiraBot.DataAccess;
 using MiraBot.DataAccess.Repositories;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -9,24 +10,43 @@ namespace MiraBot.GroceryAssistance
     {
         private readonly IGroceryAssistantRepository groceryAssistantRepository;
 
-        public GroceryAssistant(IGroceryAssistantRepository groceryAssistantRepository)
+        private readonly ILogger<GroceryAssistant> _logger;
+
+        public GroceryAssistant(
+            IGroceryAssistantRepository groceryAssistantRepository,
+            ILogger<GroceryAssistant> logger)
         {
             this.groceryAssistantRepository = groceryAssistantRepository;
+            _logger = logger;
         }
 
-        public async Task AddMealAsync(string mealName, List<string> ingredients, string ownerName, DateOnly? date = null)
+        public async Task AddMealAsync(string mealName, List<string> ingredients, ulong discordId, DateOnly? date = null)
         {
-            await this.groceryAssistantRepository.AddMealAsync(mealName, ingredients, ownerName, date);
+            await this.groceryAssistantRepository.AddMealAsync(mealName, ingredients, discordId, date);
         }
 
-        public async Task DeleteMealAsync(int mealId, string ownerName)
+        public async Task DeleteMealAsync(int mealId, ulong discordId)
         {
-            await groceryAssistantRepository.DeleteMealAsync(mealId, ownerName);
+            await groceryAssistantRepository.DeleteMealAsync(mealId, discordId);
         }
 
-        public async Task<List<Meal>> GetAllMealsAsync(string ownerName)
+        public async Task<List<Meal>> GetAllMealsAsync(ulong discordId)
         {
-            return await groceryAssistantRepository.GetAllMealsAsync(ownerName);
+            return await groceryAssistantRepository.GetAllMealsAsync(discordId);
+        }
+
+        public async Task CheckForNewUserAsync(string userName, ulong discordId)
+        {
+            if (!await groceryAssistantRepository.UserExistsAsync(discordId))
+            {
+                _logger.LogTrace("This user does not exist! Adding user now.");
+                var user = new User
+                {
+                    DiscordId = discordId,
+                    UserName = userName
+                };
+                await groceryAssistantRepository.AddNewUserAsync(user);
+            }
         }
 
         public IEnumerable<string> TrimIngredients(string ingredientsInput)
@@ -36,45 +56,50 @@ namespace MiraBot.GroceryAssistance
             return trimmedIngredients;
         }
 
-        public async Task<List<Meal>> GenerateMealIdeasAsync(int numberOfMeals, string ownerName)
+        public async Task<List<Meal>> GenerateMealIdeasAsync(int numberOfMeals, ulong discordId)
         {
             Random random = new();
-            var allMeals = await groceryAssistantRepository.GetAllMealsAsync(ownerName);
+            var allMeals = await groceryAssistantRepository.GetAllMealsAsync(discordId);
             var randomizedMeals = allMeals.OrderBy(m => random.Next()).Take(numberOfMeals);
             return randomizedMeals.ToList();
         }
 
-        public async Task<bool> IsValidNumberAsync(int number, string ownerName, bool allowZero)
+        public async Task<bool> IsValidNumberAsync(int number, ulong discordId, bool allowZero)
         {
             if ((!allowZero && number <= 0) || (allowZero && number < 0))
             {
                 return false;
             }
-            return number <= await groceryAssistantRepository.CountMealsByUserAsync(ownerName);
+            return number <= await groceryAssistantRepository.CountMealsByUserAsync(discordId);
         }
 
-        public async Task<List<Meal>> ConvertMealsFileAsync(string[] mealsFile, string ownerName)
+        public async Task<List<Meal>> ConvertMealsFileAsync(string[] mealsFile, ulong discordId)
         {
             var meals = new List<Meal>();
             var currentMeal = new Meal();
             Ingredient currentIngredient;
             var invalidMeals = new List<Meal>();
+            var user = await groceryAssistantRepository.GetUserByDiscordId(discordId);
 
             foreach (var line in mealsFile)
             {
                 if (!line.StartsWith('\t'))
                 {
-                    currentMeal = new Meal();
-                    currentMeal.Date = ConvertToDate(line);
-                    currentMeal.Name = RemoveCurlyBraces(line);
-                    currentMeal.OwnerUserName = ownerName;
+                    currentMeal = new Meal
+                    {
+                        Date = ConvertToDate(line),
+                        Name = RemoveCurlyBraces(line),
+                        OwnerId = user.UserId
+                    };
                     meals.Add(currentMeal);
                 }
                 else
                 {
-                    currentIngredient = new Ingredient();
-                    currentIngredient.Name = line.Trim();
-                    currentIngredient.OwnerUserName = ownerName;
+                    currentIngredient = new Ingredient
+                    {
+                        Name = line.Trim(),
+                        OwnerId = user.UserId
+                    };
                     currentMeal.Ingredients.Add(currentIngredient);
                 }
             }
@@ -84,7 +109,7 @@ namespace MiraBot.GroceryAssistance
 
             if (meals.Count > 0)
             {
-                await groceryAssistantRepository.ConvertMealsFileAsync(meals, ownerName);
+                await groceryAssistantRepository.ConvertMealsFileAsync(meals);
             }
 
             return meals;
@@ -97,11 +122,11 @@ namespace MiraBot.GroceryAssistance
         }
 
 
-        public async Task<List<string>> CheckNamesFromConversion(string[] mealsFile, string ownerName)
+        public async Task<List<string>> CheckNamesFromConversion(string[] mealsFile, ulong discordId)
         {
             var message = new List<string>();
             var mealNames = new HashSet<string>();
-            var savedMeals = await groceryAssistantRepository.GetAllMealsAsync(ownerName);
+            var savedMeals = await groceryAssistantRepository.GetAllMealsAsync(discordId);
             var savedMealNames = new HashSet<string>(savedMeals.Select(meal => meal.Name));
 
             foreach (var line in mealsFile)
@@ -136,9 +161,9 @@ namespace MiraBot.GroceryAssistance
             return message;
         }
 
-        public async Task<bool> IsDuplicateNameAsync(string name, string ownerName)
+        public async Task<bool> IsDuplicateNameAsync(string name, ulong discordId)
         {
-            return await groceryAssistantRepository.IsDuplicateNameAsync(name, ownerName);
+            return await groceryAssistantRepository.IsDuplicateNameAsync(name, discordId);
         }
 
         public static DateOnly? ConvertToDate(string mealName)
@@ -162,10 +187,10 @@ namespace MiraBot.GroceryAssistance
         }
 
 
-        public async Task<List<Meal>> ReplaceMealAsync(List<Meal> meals, int toReplace, string ownerName)
+        public async Task<List<Meal>> ReplaceMealAsync(List<Meal> meals, int toReplace, ulong discordId)
         {
             var random = new Random();
-            var allMeals = await groceryAssistantRepository.GetAllMealsAsync(ownerName);
+            var allMeals = await groceryAssistantRepository.GetAllMealsAsync(discordId);
             allMeals = allMeals.Where(m => !meals.Exists(m2 => m2.Name == m.Name)).ToList();
             var mealToAdd = allMeals.OrderBy(m => random.Next()).First();
             meals.RemoveAt(toReplace);

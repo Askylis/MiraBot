@@ -7,11 +7,11 @@ namespace MiraBot.Modules
 {
     public class GroceryAssistantComponents : InteractionModuleBase<SocketInteractionContext>
     {
-        private readonly InteractiveService interactiveService;
+        private readonly InteractiveService _interactiveService;
 
         public GroceryAssistantComponents(InteractiveService interactiveService)
         {
-            this.interactiveService = interactiveService;
+            _interactiveService = interactiveService;
         }
 
 
@@ -47,7 +47,7 @@ namespace MiraBot.Modules
 
             var msg = await context.Channel.SendMessageAsync(components: builder.Build());
 
-            var result = await interactiveService.NextInteractionAsync(x => x.User.Username == context.User.Username, timeout: TimeSpan.FromSeconds(120));
+            var result = await _interactiveService.NextInteractionAsync(x => x.User.Username == context.User.Username, timeout: TimeSpan.FromSeconds(120));
 
             if (result.IsSuccess)
             {

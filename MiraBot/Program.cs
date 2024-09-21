@@ -8,15 +8,17 @@ using Microsoft.Extensions.Hosting;
 using MiraBot.DataAccess;
 using MiraBot.DataAccess.Repositories;
 using MiraBot.GroceryAssistance;
+using MiraBot.Miraminders;
 using Fergun.Interactive;
 using MiraBot.Modules;
+using MiraBot.Common;
 
 
 var builder = Host.CreateApplicationBuilder(args);
 
 var configBuilder = new ConfigurationBuilder();
 configBuilder.AddEnvironmentVariables();
-configBuilder.AddJsonFile("appsettings.json", true);
+configBuilder.AddJsonFile("appsettings.json");
 configBuilder.AddUserSecrets<Program>();
 var config = configBuilder.Build();
 
@@ -28,13 +30,24 @@ builder.Services.AddSingleton(x =>
 });
 builder.Services.AddSingleton(new InteractiveConfig { DefaultTimeout = TimeSpan.FromMinutes(5) });
 builder.Services.AddSingleton<InteractiveService>();
+builder.Services.AddSingleton<RemindersCache>();
+builder.Services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 builder.Services.AddHostedService<InteractionHandlingService>();
 builder.Services.AddHostedService<DiscordStartupService>();
+builder.Services.AddHostedService<RemindersProcessingService>();
+builder.Services.AddHostedService<UsersRefreshService>();
 builder.Services.Configure<DiscordOptions>(config.GetSection("Discord"));
 builder.Services.Configure<DatabaseOptions>(config.GetSection("Database"));
-builder.Services.AddTransient<IGroceryAssistantRepository, GroceryAssistantRepository>();
+builder.Services.Configure<ReminderOptions>(config.GetSection("Reminders"));
+builder.Services.AddScoped<IGroceryAssistantRepository, GroceryAssistantRepository>();
+builder.Services.AddScoped<IMiramindersRepository, MiramindersRepository>();
+builder.Services.AddSingleton<IRemindersCache, RemindersCache>();
+builder.Services.AddSingleton<UsersCache>();
 builder.Services.AddTransient<GroceryAssistantComponents>();
 builder.Services.AddTransient<GroceryAssistant>();
+builder.Services.AddTransient<MiraminderService>();
+builder.Services.AddTransient<ReminderHandler>();
+builder.Services.AddTransient<ModuleHelpers>();
 
 using (var host = builder.Build())
 {
