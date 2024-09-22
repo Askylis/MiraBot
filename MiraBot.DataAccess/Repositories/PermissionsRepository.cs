@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using System.Runtime.CompilerServices;
 
 namespace MiraBot.DataAccess.Repositories
 {
@@ -46,6 +47,14 @@ namespace MiraBot.DataAccess.Repositories
             {
                 return await context.Permissions.FirstOrDefaultAsync(p => p.PermissionId == id)
                     .ConfigureAwait(false);
+            }
+        }
+
+        public async Task<Permission> FindNewestPermissionAsync()
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                return await context.Permissions.LastAsync();
             }
         }
 

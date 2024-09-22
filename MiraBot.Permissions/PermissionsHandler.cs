@@ -38,9 +38,14 @@ namespace MiraBot.Permissions
             return await _repository.GetAllAsync();
         }
 
-        public async Task<Permission> FindPermissionAsync(string name)
+        public async Task<Permission> FindPermissionAsync(int id)
         {
-            return await _repository.FindByNameAsync(name);
+            return await _repository.FindByIdAsync(id);
+        }
+
+        public async Task<Permission> FindNewestPermissionAsync()
+        {
+            return await _repository.FindNewestPermissionAsync();
         }
 
         public async Task<User> FindUserByNameAsync(string name)

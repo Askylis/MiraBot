@@ -1,5 +1,5 @@
 ﻿using Discord;
-using Discord.Interactions;
+using Discord.Commands;
 using System.Text;
 
 namespace MiraBot.Permissions
@@ -11,7 +11,7 @@ namespace MiraBot.Permissions
         {
             _permissionId = permissionId;
         }
-        public override async Task<PreconditionResult> CheckRequirementsAsync(IInteractionContext context, ICommandInfo command, IServiceProvider services)
+        public override async Task<PreconditionResult> CheckPermissionsAsync(ICommandContext context, CommandInfo command, IServiceProvider services)
         {
             var handler = (PermissionsHandler)services.GetService(typeof(PermissionsHandler));
             if (handler == null)
