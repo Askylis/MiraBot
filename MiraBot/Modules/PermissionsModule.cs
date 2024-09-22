@@ -15,7 +15,7 @@ namespace MiraBot.Modules
             _helpers = helpers;
         }
 
-        //[RequireCustomPermission(1)]
+        [RequireCustomPermission(1)]
         [SlashCommand("addpermission", "Add a permission to a user.")]
         public async Task AddPermissionAsync(string username = null)
         {
@@ -36,7 +36,17 @@ namespace MiraBot.Modules
             }
             
             await RespondAsync($"Which permission would you like to add to user **\"{recipient.UserName}\"**?");
-            await ReplyAsync(await _handler.ListAllAsync());
+            var validPerms = await _handler.GetAllAsync();
+            validPerms = validPerms
+                .Where(p => !recipient.Permissions.Any(rp => rp.PermissionId == p.PermissionId))
+                .ToList();
+            if (validPerms.Count == 0)
+            {
+                await ReplyAsync("There are no permissions available to assign to this user.");
+                return;
+            }
+
+            await ReplyAsync(await _handler.ListAllAsync(validPerms));
             int selection = await _helpers.GetValidNumberAsync(1, permissions.Count, Context);
             await _handler.AddPermissionToUserAsync(recipient, permissions[selection - 1]);
             await ReplyAsync($"User **{recipient.UserName}** has been given permission **{permissions[selection - 1].Name}**.");
