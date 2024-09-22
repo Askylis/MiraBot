@@ -13,7 +13,7 @@ namespace MiraBot.DataAccess.Repositories
             _usersRepository = usersRepository;
         }
 
-        public async Task AddMealAsync(string mealName, List<string> ingredients, ulong discordId, DateOnly? date)
+        public async Task AddMealAsync(string mealName, List<string> ingredients, ulong discordId, string? recipe, DateOnly? date)
         {
             var user = await _usersRepository.GetUserByDiscordIdAsync(discordId);
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
@@ -23,7 +23,8 @@ namespace MiraBot.DataAccess.Repositories
                     Name = mealName,
                     OwnerId = user.UserId,
                     Date = date,
-                    Ingredients = new List<Ingredient>()
+                    Ingredients = new List<Ingredient>(),
+                    Recipe = recipe
                 };
 
                 foreach (var ingredientName in ingredients)

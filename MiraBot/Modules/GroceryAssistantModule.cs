@@ -36,6 +36,7 @@ namespace MiraBot.Modules
         [SlashCommand("gaadd", "Add a new meal and associated ingredients.")]
         public async Task AddMealAsync()
         {
+            string recipe = null;
             await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
             await RespondAsync("What's the name of your new meal?");
             string mealName = await GetValidNameAsync(isIngredient: false);
@@ -44,7 +45,11 @@ namespace MiraBot.Modules
                 return;
             }
             var ingredients = await AddIngredientsAsync();
-            await _groceryAssistant.AddMealAsync(mealName, ingredients, Context.User.Id);
+            if (UserWantsToAddRecipe)
+            {
+                recipe = await GetRecipeAsync();
+            }
+            await _groceryAssistant.AddMealAsync(mealName, ingredients, Context.User.Id, recipe);
             await ReplyAsync($"All done! Added \"{mealName}\" and its {ingredients.Count} ingredients!");
         }
 
@@ -134,15 +139,16 @@ namespace MiraBot.Modules
                     mealName = await GetValidNameAsync(false);
                     if (mealName is null)
                         return;
-                    ingNames = selectedMeal.Ingredients.Select(i => i.Name).ToList();
-                    await _groceryAssistant.DeleteMealAsync(selectedMeal.MealId, Context.User.Id);
-                    await _groceryAssistant.AddMealAsync(mealName, ingNames, Context.User.Id, selectedMeal.Date);
+                    await _groceryAssistant.EditMealAsync(selectedMeal);
                     break;
                 case 1:
                     await ReplyAsync($"This meal's current ingredients are: {ingredients}");
                     ingNames = await AddIngredientsAsync();
-                    await _groceryAssistant.DeleteMealAsync(selectedMeal.MealId, Context.User.Id);
-                    await _groceryAssistant.AddMealAsync(selectedMeal.Name, ingNames, Context.User.Id, selectedMeal.Date);
+                    foreach (var ing in ingNames)
+                    {
+                        selectedMeal.Ingredients.Add(new Ingredient { Name = ing, OwnerId = selectedMeal.OwnerId});
+                    }
+                    await _groceryAssistant.EditMealAsync(selectedMeal);
                     break;
                 case 2:
                     await ReplyAsync($"All right, what's the new name for {selectedMeal.Name}?");
@@ -151,8 +157,11 @@ namespace MiraBot.Modules
                         return;
                     await ReplyAsync($"This meal's current ingredients are: {ingredients}");
                     ingNames = await AddIngredientsAsync();
-                    await _groceryAssistant.DeleteMealAsync(selectedMeal.MealId, Context.User.Id);
-                    await _groceryAssistant.AddMealAsync(mealName, ingNames, Context.User.Id, selectedMeal.Date);
+                    foreach (var ing in ingNames)
+                    {
+                        selectedMeal.Ingredients.Add(new Ingredient { Name = ing, OwnerId = selectedMeal.OwnerId });
+                    }
+                    await _groceryAssistant.EditMealAsync(selectedMeal);
                     break;
                 default:
                     await ReplyAsync("Something went SERIOUSLY wrong. How did you even manage this? It shouldn't be possible. Go yell at Sky or something I guess.");
@@ -230,8 +239,7 @@ namespace MiraBot.Modules
             foreach (var meal in selectedMeals)
             {
                 List<string> ingredients = meal.Ingredients.Select(i => i.Name).ToList();
-                updates.Add(_groceryAssistant.DeleteMealAsync(meal.MealId, Context.User.Id));
-                updates.Add(_groceryAssistant.AddMealAsync(meal.Name, ingredients, Context.User.Id, dateNow));
+                updates.Add(_groceryAssistant.EditMealAsync(meal));
             }
             await Task.WhenAll(updates);
         }
@@ -288,27 +296,37 @@ namespace MiraBot.Modules
 
         [NotBanned]
         [SlashCommand("gaaddrecipe", "Add a recipe to an existing meal.")]
-        public async Task AddRecipeAsync()
+        public async Task AddRecipeAsync(int mealId = 0)
         {
+            Meal meal;
             await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
-            var meals = await _groceryAssistant.GetAllMealsAsync(Context.User.Id);
-            if (meals.Count == 0)
-            {
-                await ReplyAsync("You don't have any meals saved.");
-                return;
-            }
-            await ReplyAsync("First, select which meal you'd like to add a recipe to.");
-            int index = await GetMealIndexAsync(meals,
-            "Choose which meal you'd like to add a recipe to.",
-            "recipe-menu",
-            "Add a recipe to this meal.",
-            Context);
 
-            if (index == -1)
+            if (mealId == 0)
             {
-                return;
+                var meals = await _groceryAssistant.GetAllMealsAsync(Context.User.Id);
+                if (meals.Count == 0)
+                {
+                    await ReplyAsync("You don't have any meals saved.");
+                    return;
+                }
+                await ReplyAsync("First, select which meal you'd like to add a recipe to.");
+                int index = await GetMealIndexAsync(meals,
+                "Choose which meal you'd like to add a recipe to.",
+                "recipe-menu",
+                "Add a recipe to this meal.",
+                Context);
+
+                if (index == -1)
+                {
+                    return;
+                }
+                meal = meals[index];
             }
-            var meal = meals[index];
+            else
+            {
+                meal = await _groceryAssistant.FindAsync(mealId);
+            }
+            
             await ReplyAsync($"Okay, go ahead and send me your recipe for {meal.Name}! Please copy/paste it here, and don't send a file, image, or link.");
             meal.Recipe = await GetRecipeAsync();
             await _groceryAssistant.EditMealAsync(meal);

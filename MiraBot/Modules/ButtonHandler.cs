@@ -29,7 +29,7 @@ namespace MiraBot.Modules
 
                 if (recipient != null && meal != null)
                 {
-                    await _gaRepository.AddMealAsync(meal.Name, ingredients, Context.User.Id, null);
+                    await _gaRepository.AddMealAsync(meal.Name, ingredients, Context.User.Id, meal.Recipe, null);
 
                     await RespondAsync("Added this recipe to your saved meals!");
                 }

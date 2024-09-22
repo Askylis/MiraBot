@@ -23,9 +23,9 @@ namespace MiraBot.GroceryAssistance
             _usersRepository = usersRepository;
         }
 
-        public async Task AddMealAsync(string mealName, List<string> ingredients, ulong discordId, DateOnly? date = null)
+        public async Task AddMealAsync(string mealName, List<string> ingredients, ulong discordId, string recipe = null, DateOnly? date = null)
         {
-            await _groceryAssistantRepository.AddMealAsync(mealName, ingredients, discordId, date);
+            await _groceryAssistantRepository.AddMealAsync(mealName, ingredients, discordId, recipe, date);
         }
 
         public async Task DeleteMealAsync(int mealId, ulong discordId)
@@ -36,6 +36,11 @@ namespace MiraBot.GroceryAssistance
         public async Task EditMealAsync(Meal meal)
         {
             await _groceryAssistantRepository.EditMealAsync(meal);
+        }
+
+        public async Task<Meal> FindAsync(int mealId)
+        {
+            return await _groceryAssistantRepository.FindAsync(mealId);
         }
 
         public async Task<List<Meal>> GetAllMealsAsync(ulong discordId)
