@@ -29,7 +29,7 @@ namespace MiraBot.Modules
         }
 
         [NotBanned]
-        [SlashCommand("addmeal", "Add a new meal and associated ingredients.")]
+        [SlashCommand("gaaddmeal", "Add a new meal and associated ingredients.")]
         public async Task AddMealAsync()
         {
             await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
@@ -45,7 +45,7 @@ namespace MiraBot.Modules
         }
 
         [NotBanned]
-        [SlashCommand("deletemeal", "Lets you delete one of your saved meals.")]
+        [SlashCommand("gadeletemeal", "Lets you delete one of your saved meals.")]
         public async Task DeleteMealAsync()
         {
             await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
@@ -76,7 +76,7 @@ namespace MiraBot.Modules
         }
 
         [NotBanned]
-        [SlashCommand("editmeal", "Lets you edit one of your saved meals.")]
+        [SlashCommand("gaeditmeal", "Lets you edit one of your saved meals.")]
         public async Task EditMealAsync()
         {
             await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
@@ -158,7 +158,7 @@ namespace MiraBot.Modules
         }
 
         [NotBanned]
-        [SlashCommand("listmeals", "Lists all meals, along with associated ingredients, that are owned by you.")]
+        [SlashCommand("galistmeals", "Lists all meals, along with associated ingredients, that are owned by you.")]
         public async Task ListMealsAsync()
         {
             await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
@@ -233,7 +233,7 @@ namespace MiraBot.Modules
         }
 
         [NotBanned]
-        [SlashCommand("convert", "Converts old Grocery Assist meals files into a format that Mira can understand.")]
+        [SlashCommand("gaconvert", "Converts old Grocery Assist meals files into a format that Mira can understand.")]
         public async Task ConvertMealsFileAsync()
         {
             await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
@@ -280,6 +280,13 @@ namespace MiraBot.Modules
             {
                 await ReplyAsync($"All right, all done! Converted and saved all {meals.Count} meals!");
             }
+        }
+
+        [NotBanned]
+        [SlashCommand("gaaddrecipe", "Add a recipe to an existing meal.")]
+        public async Task AddRecipeAsync()
+        {
+
         }
 
 
