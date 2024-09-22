@@ -20,5 +20,10 @@ namespace MiraBot.Communication
 
             await dm.SendMessageAsync(content);
         }
+
+        public async Task SendRecipeAsync(User recipient, Meal meal)
+        {
+
+        }
     }
 }

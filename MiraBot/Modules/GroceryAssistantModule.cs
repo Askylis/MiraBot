@@ -1,7 +1,7 @@
 ﻿using Discord.Interactions;
 using Fergun.Interactive;
-using Fergun.Interactive.Selection;
 using Microsoft.IdentityModel.Tokens;
+using MiraBot.Communication;
 using MiraBot.DataAccess;
 using MiraBot.GroceryAssistance;
 using MiraBot.Permissions;
@@ -14,6 +14,7 @@ namespace MiraBot.Modules
         private readonly InteractiveService _interactiveService;
         private readonly GroceryAssistantComponents _components;
         private readonly ModuleHelpers _helpers;
+        private readonly UserCommunications _comms;
         internal static int modifyValue = 0;
         internal const int maxNameLength = 50;
         internal const int discordMsgLimit = 2000;
@@ -22,12 +23,13 @@ namespace MiraBot.Modules
         internal const int maxIngredientLength = 1500;
         internal const int maxRecipeLength = 65535;
         public GroceryAssistantModule(GroceryAssistant groceryAssistant, InteractiveService interactiveService,
-            GroceryAssistantComponents components, ModuleHelpers moduleHelpers)
+            GroceryAssistantComponents components, ModuleHelpers moduleHelpers, UserCommunications comms)
         {
             _groceryAssistant = groceryAssistant;
             _interactiveService = interactiveService;
             _components = components;
             _helpers = moduleHelpers;
+            _comms = comms;
         }
 
         [NotBanned]
@@ -343,8 +345,8 @@ namespace MiraBot.Modules
                 return;
             }
             var share = mealsWithRecipes[index];
-            // add new class called UserCommunications, use that to send recipes/reminders between users? Could also handle blacklisting/whitelisting there.
-            // could replace messaging in ReminderProcessingService with a call to that class, too. 
+            await _comms.SendRecipeAsync(recipient, mealsWithRecipes[index]);
+            await ReplyAsync($"Okay, sent that recipe to {recipient.UserName}!");
         }
 
 
