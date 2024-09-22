@@ -1,5 +1,6 @@
 ﻿using Discord.Interactions;
 using Fergun.Interactive;
+using Fergun.Interactive.Selection;
 using Microsoft.IdentityModel.Tokens;
 using MiraBot.DataAccess;
 using MiraBot.GroceryAssistance;
@@ -19,6 +20,7 @@ namespace MiraBot.Modules
         internal const int maxIngredients = 100;
         internal const int selectMenuLimit = 24;
         internal const int maxIngredientLength = 1500;
+        internal const int maxRecipeLength = 65535;
         public GroceryAssistantModule(GroceryAssistant groceryAssistant, InteractiveService interactiveService, 
             GroceryAssistantComponents components, ModuleHelpers moduleHelpers)
         {
@@ -233,7 +235,7 @@ namespace MiraBot.Modules
         }
 
         [NotBanned]
-        [SlashCommand("gaconvert", "Converts old Grocery Assist meals files into a format that Mira can understand.")]
+        [SlashCommand("gaconvert", "Converts old Grocery Assistant meals files into database entries.")]
         public async Task ConvertMealsFileAsync()
         {
             await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
@@ -286,7 +288,38 @@ namespace MiraBot.Modules
         [SlashCommand("gaaddrecipe", "Add a recipe to an existing meal.")]
         public async Task AddRecipeAsync()
         {
+            var index = 0;
+            int selection = 0;
+            await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
+            var meals = await _groceryAssistant.GetAllMealsAsync(Context.User.Id);
+            if (meals.Count == 0)
+            {
+                await ReplyAsync("You don't have any meals saved.");
+                return;
+            }
+            await ReplyAsync("First, select which meal you'd like to add a recipe to.");
+            index = await GetMealIndexAsync(meals,
+            "Choose which meal you'd like to add a recipe to.",
+            "recipe-menu",
+            "Add a recipe to this meal.",
+      Context);
 
+            if (index == -1)
+            {
+                return;
+            }
+            selection = modifyValue;
+            modifyValue = 0;
+            var meal = meals[index];
+
+            await ReplyAsync($"Okay, go ahead and send me your recipe for {meal.Name}! Please copy/paste it here, and don't send a file, image, or link.");
+        }
+
+        [NotBanned]
+        [SlashCommand("gashare", "Share a recipe with another user.")]
+        public async Task ShareRecipeAsync()
+        {
+            await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
         }
 
 

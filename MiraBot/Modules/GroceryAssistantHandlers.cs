@@ -25,6 +25,12 @@ namespace MiraBot.Modules
             await MenuHandler(inputs, "edit");
         }
 
+        [ComponentInteraction("recipe-menu")]
+        public async Task RecipeMenuHandler(string[] inputs)
+        {
+            await MenuHandler(inputs, "recipe");
+        }
+
         public async Task MenuHandler(string[] inputs, string menuType)
         {
             if (inputs[0] == "nevermind")
@@ -34,6 +40,7 @@ namespace MiraBot.Modules
                     "override" => "You chose not to override anything.",
                     "delete" => "All right, no problem!",
                     "edit" => "All right, no problem!",
+                    "recipe" => "All right, no problem!"
                 };
 
                 await ReplyAsync(message);
