@@ -25,9 +25,6 @@ namespace MiraBot.Permissions
             {
                 sb.AppendLine(permission.Name);
             }
-            Console.WriteLine($"{owner.UserName} used a command that requires permissions.");
-            Console.WriteLine($"This command requires permission: {_permissionId}.");
-            Console.WriteLine($"{owner.UserName} has the following permissions: {sb}");
             if (await handler.UserHasPermissionAsync(owner.UserId, _permissionId))
             {
                 return await Task.FromResult(PreconditionResult.FromSuccess());
