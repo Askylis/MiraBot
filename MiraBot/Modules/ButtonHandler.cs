@@ -1,5 +1,8 @@
-﻿using Discord.Interactions;
+﻿using Discord;
+using Discord.Interactions;
+using Discord.WebSocket;
 using MiraBot.DataAccess.Repositories;
+using System.Runtime.InteropServices;
 
 namespace MiraBot.Modules
 {
@@ -30,8 +33,12 @@ namespace MiraBot.Modules
                 if (recipient != null && meal != null)
                 {
                     await _gaRepository.AddMealAsync(meal.Name, ingredients, Context.User.Id, meal.Recipe, null);
-
                     await RespondAsync("Added this recipe to your saved meals!");
+
+                    if (Context.Interaction is SocketMessageComponent component)
+                    {
+                        await component.Message.DeleteAsync();
+                    }
                 }
             }
         }
@@ -40,6 +47,10 @@ namespace MiraBot.Modules
         public async Task HandleRecipeSaveNoButton()
         {
             await RespondAsync("No worries! I won't save this recipe for you then.");
+            if (Context.Interaction is SocketMessageComponent component)
+            {
+                await component.Message.DeleteAsync();
+            }
         }
     }
 }
