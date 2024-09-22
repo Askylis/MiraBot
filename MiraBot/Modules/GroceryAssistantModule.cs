@@ -47,6 +47,7 @@ namespace MiraBot.Modules
             var ingredients = await AddIngredientsAsync();
             if (await UserWantsToAddRecipe())
             {
+                await ReplyAsync("Okay, go ahead and send me the recipe for this meal! Make sure to copy/paste it. Don't send a file or image.");
                 recipe = await GetRecipeAsync();
             }
             await _groceryAssistant.AddMealAsync(mealName, ingredients, Context.User.Id, recipe);
@@ -337,10 +338,11 @@ namespace MiraBot.Modules
         [SlashCommand("gashare", "Share a recipe with another user.")]
         public async Task ShareRecipeAsync(string recipientName)
         {
-            var recipient = await _groceryAssistant.GetUserAsync(recipientName);
+            var recipient = await _groceryAssistant.GetUserByNameAsync(recipientName);
+            var owner = await _groceryAssistant.GetUserByDiscordIdAsync(Context.User.Id);
             if (recipient is null)
             {
-                await ReplyAsync($"Could not find a user with the username \"{recipientName}\". Please try again with a valid username.");
+                await RespondAsync($"Could not find a user with the username \"{recipientName}\". Please try again with a valid username.");
                 return;
             }
             await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
@@ -348,10 +350,10 @@ namespace MiraBot.Modules
             var mealsWithRecipes = meals.Where(m =>  m.Recipe != null).ToList();
             if (mealsWithRecipes.Count == 0)
             {
-                await ReplyAsync("You have no saved meals that have recipes attached to them.");
+                await RespondAsync("You have no saved meals that have recipes attached to them.");
                 return;
             }
-            await ReplyAsync("Which meal would you like to share?");
+            await RespondAsync("Which meal would you like to share?");
             int index = await GetMealIndexAsync(mealsWithRecipes,
             "Choose which recipe you'd like to share.",
             "share-menu",
@@ -363,7 +365,7 @@ namespace MiraBot.Modules
                 return;
             }
             var share = mealsWithRecipes[index];
-            await _comms.SendRecipeAsync(recipient, mealsWithRecipes[index]);
+            await _comms.SendRecipeAsync(recipient, owner, mealsWithRecipes[index]);
             await ReplyAsync($"Okay, sent that recipe to {recipient.UserName}!");
         }
 

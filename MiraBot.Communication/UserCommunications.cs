@@ -22,12 +22,12 @@ namespace MiraBot.Communication
             await dm.SendMessageAsync(content);
         }
 
-        public async Task SendRecipeAsync(User recipient, Meal meal)
+        public async Task SendRecipeAsync(User recipient, User owner, Meal meal)
         {
             var discordRecipient = await _client.Rest.GetUserAsync(recipient.DiscordId);
             var dm = await discordRecipient.CreateDMChannelAsync();
 
-            await AddButtonsAsync(dm, meal.MealId, $"{meal.Owner.UserName} sent you a recipe for \"{meal.Name}\"! Would you like to save this recipe for yourself?");
+            await AddButtonsAsync(dm, meal.MealId, $"{owner.UserName} sent you a recipe for \"{meal.Name}\"! Would you like to save this recipe for yourself?");
         }
 
         public async Task AddButtonsAsync(RestDMChannel dm, int mealId, string text)

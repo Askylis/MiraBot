@@ -62,9 +62,14 @@ namespace MiraBot.GroceryAssistance
             }
         }
 
-        public async Task<User?> GetUserAsync(string username)
+        public async Task<User?> GetUserByNameAsync(string username)
         {
             return await _usersRepository.GetUserByNameAsync(username);
+        }
+
+        public async Task<User> GetUserByDiscordIdAsync(ulong discordId)
+        {
+            return await _usersRepository.GetUserByDiscordIdAsync(discordId);
         }
 
         public IEnumerable<string> TrimIngredients(string ingredientsInput)
