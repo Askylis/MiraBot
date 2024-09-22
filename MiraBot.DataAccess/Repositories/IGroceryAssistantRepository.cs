@@ -9,5 +9,6 @@
         Task<int> CountMealsByUserAsync(ulong discordId);
         Task<bool> IsDuplicateNameAsync(string name, ulong discordId);
         Task EditMealAsync(Meal update);
+        Task<Meal> FindAsync(int mealId);
     }
 }

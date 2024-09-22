@@ -41,6 +41,14 @@ namespace MiraBot.DataAccess.Repositories
             }
         }
 
+        public async Task<Meal> FindAsync(int mealId)
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                return await context.Meals.FirstOrDefaultAsync(m => m.MealId == mealId);
+            }
+        }
+
         public async Task DeleteMealAsync(int mealId, ulong discordId)
         {
             var user = await _usersRepository.GetUserByDiscordIdAsync(discordId);
