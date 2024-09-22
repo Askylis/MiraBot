@@ -53,6 +53,7 @@ public partial class MiraBotContext : DbContext
             entity.Property(e => e.Name)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+            entity.Property(e => e.Recipe).IsUnicode(false);
 
             entity.HasOne(d => d.Owner).WithMany(p => p.Meals)
                 .HasForeignKey(d => d.OwnerId)

@@ -15,6 +15,8 @@ public partial class Meal
 
     public bool IsDeleted { get; set; }
 
+    public string? Recipe { get; set; }
+
     public virtual ICollection<MealLog> MealLogs { get; set; } = new List<MealLog>();
 
     public virtual User Owner { get; set; } = null!;
