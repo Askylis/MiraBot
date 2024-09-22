@@ -20,15 +20,12 @@ namespace MiraBot.Permissions
             }
 
             var owner = await handler.FindUserByDiscordIdAsync(context.User.Id);
-            var sb = new StringBuilder();
-            foreach (var permission in owner.Permissions)
-            {
-                sb.AppendLine(permission.Name);
-            }
+
             if (await handler.UserHasPermissionAsync(owner.UserId, _permissionId))
             {
                 return await Task.FromResult(PreconditionResult.FromSuccess());
             }
+
             else return await Task.FromResult(PreconditionResult.FromError("User does not have permission to access this command."));
         }
     }

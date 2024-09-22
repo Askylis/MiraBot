@@ -97,5 +97,10 @@ namespace MiraBot.Permissions
             }
             return value;
         }
+
+        public async Task<bool> IsBannedAsync(ulong discordId)
+        {
+            return await _repository.UserIsBannedAsync(discordId);
+        }
     }
 }

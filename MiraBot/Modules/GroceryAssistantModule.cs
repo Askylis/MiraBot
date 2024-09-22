@@ -3,6 +3,7 @@ using Fergun.Interactive;
 using Microsoft.IdentityModel.Tokens;
 using MiraBot.DataAccess;
 using MiraBot.GroceryAssistance;
+using MiraBot.Permissions;
 
 namespace MiraBot.Modules
 {
@@ -27,7 +28,7 @@ namespace MiraBot.Modules
             _helpers = moduleHelpers;
         }
 
-
+        [NotBanned]
         [SlashCommand("addmeal", "Add a new meal and associated ingredients.")]
         public async Task AddMealAsync()
         {
@@ -43,7 +44,7 @@ namespace MiraBot.Modules
             await ReplyAsync($"All done! Added \"{mealName}\" and its {ingredients.Count} ingredients!");
         }
 
-
+        [NotBanned]
         [SlashCommand("deletemeal", "Lets you delete one of your saved meals.")]
         public async Task DeleteMealAsync()
         {
@@ -74,7 +75,7 @@ namespace MiraBot.Modules
             }
         }
 
-
+        [NotBanned]
         [SlashCommand("editmeal", "Lets you edit one of your saved meals.")]
         public async Task EditMealAsync()
         {
@@ -156,7 +157,7 @@ namespace MiraBot.Modules
             await ReplyAsync("All done! That meal has been updated!");
         }
 
-
+        [NotBanned]
         [SlashCommand("listmeals", "Lists all meals, along with associated ingredients, that are owned by you.")]
         public async Task ListMealsAsync()
         {
@@ -181,7 +182,7 @@ namespace MiraBot.Modules
             }
         }
 
-
+        [NotBanned]
         [SlashCommand("ga", "Generates a new list of grocery ideas.")]
         public async Task GenerateMealsListAsync()
         {
@@ -231,7 +232,7 @@ namespace MiraBot.Modules
             await Task.WhenAll(updates);
         }
 
-
+        [NotBanned]
         [SlashCommand("convert", "Converts old Grocery Assist meals files into a format that Mira can understand.")]
         public async Task ConvertMealsFileAsync()
         {

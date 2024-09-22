@@ -73,5 +73,14 @@ namespace MiraBot.DataAccess.Repositories
                 return await context.Permissions.ToListAsync().ConfigureAwait(false);
             }
         }
+
+        public async Task<bool> UserIsBannedAsync(ulong discordId)
+        {
+            var user = await _usersRepository.GetUserByDiscordIdAsync(discordId);
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                return user.IsBanned;
+            }
+        }
     }
 }
