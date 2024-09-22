@@ -54,6 +54,26 @@ namespace MiraBot.DataAccess.Repositories
             }
         }
 
+        public async Task EditMealAsync(Meal update)
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                var meal = context.Meals.Find(update.MealId);
+                if (meal is null)
+                {
+                    return;
+                }
+
+                context.Entry(meal).CurrentValues.SetValues(update);
+                if (!meal.Recipe.Any())
+                {
+                    meal.Recipe = update.Recipe;
+                }
+                await context.SaveChangesAsync()
+                    .ConfigureAwait(false);
+            }
+        }
+
         public async Task<List<Meal>> GetAllMealsAsync(ulong discordId)
         {
             var user = await _usersRepository.GetUserByDiscordIdAsync(discordId);

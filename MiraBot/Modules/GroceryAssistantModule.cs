@@ -21,7 +21,7 @@ namespace MiraBot.Modules
         internal const int selectMenuLimit = 24;
         internal const int maxIngredientLength = 1500;
         internal const int maxRecipeLength = 65535;
-        public GroceryAssistantModule(GroceryAssistant groceryAssistant, InteractiveService interactiveService, 
+        public GroceryAssistantModule(GroceryAssistant groceryAssistant, InteractiveService interactiveService,
             GroceryAssistantComponents components, ModuleHelpers moduleHelpers)
         {
             _groceryAssistant = groceryAssistant;
@@ -31,7 +31,7 @@ namespace MiraBot.Modules
         }
 
         [NotBanned]
-        [SlashCommand("gaaddmeal", "Add a new meal and associated ingredients.")]
+        [SlashCommand("gaadd", "Add a new meal and associated ingredients.")]
         public async Task AddMealAsync()
         {
             await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
@@ -47,7 +47,7 @@ namespace MiraBot.Modules
         }
 
         [NotBanned]
-        [SlashCommand("gadeletemeal", "Lets you delete one of your saved meals.")]
+        [SlashCommand("gadelete", "Lets you delete one of your saved meals.")]
         public async Task DeleteMealAsync()
         {
             await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
@@ -78,7 +78,7 @@ namespace MiraBot.Modules
         }
 
         [NotBanned]
-        [SlashCommand("gaeditmeal", "Lets you edit one of your saved meals.")]
+        [SlashCommand("gaedit", "Lets you edit one of your saved meals.")]
         public async Task EditMealAsync()
         {
             await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
@@ -160,7 +160,7 @@ namespace MiraBot.Modules
         }
 
         [NotBanned]
-        [SlashCommand("galistmeals", "Lists all meals, along with associated ingredients, that are owned by you.")]
+        [SlashCommand("galist", "Lists all meals, along with associated ingredients, that are owned by you.")]
         public async Task ListMealsAsync()
         {
             await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
@@ -288,8 +288,6 @@ namespace MiraBot.Modules
         [SlashCommand("gaaddrecipe", "Add a recipe to an existing meal.")]
         public async Task AddRecipeAsync()
         {
-            var index = 0;
-            int selection = 0;
             await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
             var meals = await _groceryAssistant.GetAllMealsAsync(Context.User.Id);
             if (meals.Count == 0)
@@ -298,28 +296,55 @@ namespace MiraBot.Modules
                 return;
             }
             await ReplyAsync("First, select which meal you'd like to add a recipe to.");
-            index = await GetMealIndexAsync(meals,
+            int index = await GetMealIndexAsync(meals,
             "Choose which meal you'd like to add a recipe to.",
             "recipe-menu",
             "Add a recipe to this meal.",
-      Context);
+            Context);
 
             if (index == -1)
             {
                 return;
             }
-            selection = modifyValue;
-            modifyValue = 0;
             var meal = meals[index];
-
             await ReplyAsync($"Okay, go ahead and send me your recipe for {meal.Name}! Please copy/paste it here, and don't send a file, image, or link.");
+            meal.Recipe = await GetRecipeAsync();
+            await _groceryAssistant.EditMealAsync(meal);
+            await ReplyAsync($"Got it! Added that recipe to you meal \"{meal.Name}\"!");
         }
 
         [NotBanned]
         [SlashCommand("gashare", "Share a recipe with another user.")]
-        public async Task ShareRecipeAsync()
+        public async Task ShareRecipeAsync(string recipientName)
         {
+            var recipient = await _groceryAssistant.GetUserAsync(recipientName);
+            if (recipient is null)
+            {
+                await ReplyAsync($"Could not find a user with the username \"{recipientName}\". Please try again with a valid username.");
+                return;
+            }
             await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
+            var meals = await _groceryAssistant.GetAllMealsAsync(Context.User.Id);
+            var mealsWithRecipes = meals.Where(m =>  m.Recipe != null).ToList();
+            if (mealsWithRecipes.Count == 0)
+            {
+                await ReplyAsync("You have no saved meals that have recipes attached to them.");
+                return;
+            }
+            await ReplyAsync("Which meal would you like to share?");
+            int index = await GetMealIndexAsync(mealsWithRecipes,
+            "Choose which recipe you'd like to share.",
+            "share-menu",
+            "Share this meal.",
+            Context);
+
+            if (index == -1)
+            {
+                return;
+            }
+            var share = mealsWithRecipes[index];
+            // add new class called UserCommunications, use that to send recipes/reminders between users? Could also handle blacklisting/whitelisting there.
+            // could replace messaging in ReminderProcessingService with a call to that class, too. 
         }
 
 
@@ -358,6 +383,36 @@ namespace MiraBot.Modules
             }
 
             return selection;
+        }
+
+        public async Task<string> GetRecipeAsync()
+        {
+            var isValid = false;
+            string recipe = String.Empty;
+
+            while (!isValid)
+            {
+                var response = await _interactiveService.NextMessageAsync(
+                        x => x.Author.Id == Context.User.Id && x.Channel.Id == Context.Channel.Id,
+                        timeout: TimeSpan.FromMinutes(2));
+
+                if (!response.IsSuccess)
+                {
+                    await ReplyAsync("You did not respond in time.");
+                    break;
+                }
+
+                if (response.Value.Content.Length > maxRecipeLength)
+                {
+                    await ReplyAsync($"Your recipe is too long! It is {response.Value.Content.Length} characters long, but can be no longer than {maxRecipeLength} characters long.");
+                    continue;
+                }
+
+                isValid = true;
+                recipe = response.Value.Content;
+            }
+
+            return recipe;
         }
 
 

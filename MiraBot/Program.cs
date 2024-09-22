@@ -14,6 +14,7 @@ using Fergun.Interactive;
 using MiraBot.Modules;
 using MiraBot.Common;
 using Discord.Commands;
+using MiraBot.Communication;
 
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -54,6 +55,7 @@ builder.Services.AddTransient<PermissionsHandler>();
 builder.Services.AddTransient<MiraminderService>();
 builder.Services.AddTransient<ReminderHandler>();
 builder.Services.AddTransient<ModuleHelpers>();
+builder.Services.AddTransient<UserCommunications>();
 
 using (var host = builder.Build())
 {

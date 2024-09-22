@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\MiraBot.Communication\MiraBot.Communication.csproj" />
     <ProjectReference Include="..\MiraBot.DataAccess\MiraBot.DataAccess.csproj" />
     <ProjectReference Include="..\MiraBot.GroceryAssistant\MiraBot.GroceryAssistance.csproj" />
     <ProjectReference Include="..\MiraBot.Miraminders\MiraBot.Miraminders.csproj" />

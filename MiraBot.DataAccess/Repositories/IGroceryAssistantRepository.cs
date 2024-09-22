@@ -8,5 +8,6 @@
         Task DeleteMealAsync(int mealId, ulong discordId);
         Task<int> CountMealsByUserAsync(ulong discordId);
         Task<bool> IsDuplicateNameAsync(string name, ulong discordId);
+        Task EditMealAsync(Meal update);
     }
 }

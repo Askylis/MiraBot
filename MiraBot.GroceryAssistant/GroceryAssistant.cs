@@ -33,6 +33,11 @@ namespace MiraBot.GroceryAssistance
             await _groceryAssistantRepository.DeleteMealAsync(mealId, discordId);
         }
 
+        public async Task EditMealAsync(Meal meal)
+        {
+            await _groceryAssistantRepository.EditMealAsync(meal);
+        }
+
         public async Task<List<Meal>> GetAllMealsAsync(ulong discordId)
         {
             return await _groceryAssistantRepository.GetAllMealsAsync(discordId);
@@ -50,6 +55,11 @@ namespace MiraBot.GroceryAssistance
                 };
                 await _usersRepository.AddNewUserAsync(user);
             }
+        }
+
+        public async Task<User?> GetUserAsync(string username)
+        {
+            return await _usersRepository.GetUserByNameAsync(username);
         }
 
         public IEnumerable<string> TrimIngredients(string ingredientsInput)
