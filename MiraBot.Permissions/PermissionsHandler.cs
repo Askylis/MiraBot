@@ -1,4 +1,5 @@
-﻿using MiraBot.DataAccess;
+﻿using Microsoft.IdentityModel.Tokens;
+using MiraBot.DataAccess;
 using MiraBot.DataAccess.Repositories;
 using System.Text;
 
@@ -23,8 +24,7 @@ namespace MiraBot.Permissions
 
         public async Task AddPermissionToUserAsync(User user, Permission permission)
         {
-            user.Permissions.Add(permission);
-            await _usersRepository.ModifyUserAsync(user);
+            await _usersRepository.UpdatePermissionsAsync(user, permission);
         }
 
         public async Task RemovePermissionFromUserAsync(User user, Permission permission)
@@ -65,11 +65,28 @@ namespace MiraBot.Permissions
             int counter = 1;
             foreach (var permission in permissions)
             {
-                sb.Append($"{counter}. Permission name: **{permission.Name}** - Permission ID: **{permission.PermissionId}**");
+                sb.AppendLine($"{counter}. Permission name: **{permission.Name}** - Permission ID: **{permission.PermissionId}**");
                 counter++;
             }
 
             return sb.ToString();
+        }
+
+        public string ListPermissionsAsync(User user)
+        {
+            var sb = new StringBuilder();
+            int counter = 1;
+            
+            foreach (var permission in user.Permissions)
+            {
+                sb.AppendLine($"{counter}. Permission name: **{permission.Name}** with permission ID **{permission.PermissionId}**");
+            }
+            var value = sb.ToString();
+            if (value.IsNullOrEmpty())
+            {
+                return "This user has no permissions.";
+            }
+            return value;
         }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using Discord.Interactions;
-using Fergun.Interactive;
 using MiraBot.DataAccess;
 using MiraBot.Permissions;
 
@@ -7,18 +6,16 @@ namespace MiraBot.Modules
 {
     public class PermissionsModule : InteractionModuleBase<SocketInteractionContext>
     {
-        private readonly InteractiveService _interactive;
         private readonly PermissionsHandler _handler;
         private readonly ModuleHelpers _helpers;
 
-        public PermissionsModule(InteractiveService interactive, PermissionsHandler handler, ModuleHelpers helpers)
+        public PermissionsModule(PermissionsHandler handler, ModuleHelpers helpers)
         {
-            _interactive = interactive;
             _handler = handler;
             _helpers = helpers;
         }
 
-        [RequireCustomPermission(1)]
+        //[RequireCustomPermission(1)]
         [SlashCommand("addpermission", "Add a permission to a user.")]
         public async Task AddPermissionAsync(string username = null)
         {
@@ -91,8 +88,8 @@ namespace MiraBot.Modules
         }
 
         [RequireCustomPermission(1)]
-        [SlashCommand("listpermissions", "Provides a list of all available permissions.")]
-        public async Task ListPermissionsAsync()
+        [SlashCommand("listallpermissions", "Provides a list of all available permissions.")]
+        public async Task ListAllPermissionsAsync()
         {
             await DeferAsync();
             var permissions = await _handler.GetAllAsync();
@@ -103,6 +100,27 @@ namespace MiraBot.Modules
             }
 
             await FollowupAsync(await _handler.ListAllAsync());
+        }
+
+        [SlashCommand("listpermissionsfor", "Lists all permissions that a specified user has.")]
+        public async Task ListPermissionsFor(string username = null)
+        {
+            await DeferAsync();
+            User recipient;
+            if (username is null)
+            {
+                recipient = await _handler.FindUserByDiscordIdAsync(Context.User.Id);
+            }
+            else
+            {
+                recipient = await _handler.FindUserByNameAsync(username);
+                if (recipient is null)
+                {
+                    await RespondAsync("Could not find a user with that username.");
+                    return;
+                }
+            }
+            await FollowupAsync(_handler.ListPermissionsAsync(recipient));
         }
     }
 }

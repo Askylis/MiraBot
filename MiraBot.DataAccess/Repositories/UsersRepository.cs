@@ -26,7 +26,9 @@ namespace MiraBot.DataAccess.Repositories
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
-                return await context.Users.FirstOrDefaultAsync(u => u.UserName == userName)
+                return await context.Users
+                    .Include(p => p.Permissions)
+                    .FirstOrDefaultAsync(u => u.UserName == userName)
                     .ConfigureAwait(false);
             }
         }
@@ -42,7 +44,9 @@ namespace MiraBot.DataAccess.Repositories
 
         private static async Task<User?> GetUserByDiscordIdAsync(ulong discordId, MiraBotContext ctx)
         {
-            return await ctx.Users.FirstOrDefaultAsync(u => u.DiscordId == discordId)
+            return await ctx.Users
+                .Include(p => p.Permissions)
+                .FirstOrDefaultAsync(u => u.DiscordId == discordId)
                 .ConfigureAwait(false);
         }
 
@@ -53,7 +57,8 @@ namespace MiraBot.DataAccess.Repositories
             {
                 return await context
                     .Users
-                    .FindAsync(userId)
+                    .Include(p => p.Permissions)
+                    .FirstOrDefaultAsync(u => u.UserId == userId)
                     .ConfigureAwait(false);
             }
         }
@@ -81,6 +86,27 @@ namespace MiraBot.DataAccess.Repositories
                 await context
                     .SaveChangesAsync()
                     .ConfigureAwait(false);
+            }
+        }
+
+        public async Task UpdatePermissionsAsync(User user, Permission permission)
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                var dbUser = context.Users.Find(user.UserId);
+                var dbPermission = context.Permissions.Find(permission.PermissionId);
+                if (dbUser is null)
+                {
+                    return;
+                }
+
+                if (!dbUser.Permissions.Any(p => p.PermissionId == permission.PermissionId))
+                {
+                    dbUser.Permissions.Add(dbPermission);
+
+                    await context.SaveChangesAsync()
+                        .ConfigureAwait(false);
+                }
             }
         }
 
