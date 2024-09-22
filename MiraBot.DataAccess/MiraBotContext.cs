@@ -18,6 +18,7 @@ public partial class MiraBotContext : DbContext
     {
     }
 
+
     public virtual DbSet<Ingredient> Ingredients { get; set; }
 
     public virtual DbSet<Meal> Meals { get; set; }

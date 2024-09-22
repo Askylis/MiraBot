@@ -15,12 +15,12 @@ namespace MiraBot.Modules
 
         [RequireCustomPermission(1)]
         [Command("addpermission")]
-        public async Task AddPermissionAsync(string username, int permissionId)
+        public async Task AddPermissionAsync(ulong discordId, int permissionId)
         {
-            var recipient = await _handler.FindUserByNameAsync(username);
+            var recipient = await _handler.FindUserByDiscordIdAsync(discordId);
             if (recipient is null)
             {
-                await Context.Channel.SendMessageAsync($"Could not find specified user: **\"{username}\"**.");
+                await Context.Channel.SendMessageAsync($"Could not find the specified user.");
             }
 
             var permission = await _handler.FindPermissionAsync(permissionId);
@@ -35,21 +35,21 @@ namespace MiraBot.Modules
 
         [RequireCustomPermission(1)]
         [Command("removepermission")]
-        public async Task RemovePermissionAsync()
+        public async Task RemovePermissionAsync(ulong discordId, int permissionId)
         {
 
         }
 
         [RequireCustomPermission(1)]
         [Command("ban")]
-        public async Task BanUserAsync()
+        public async Task BanUserAsync(ulong discordId)
         {
 
         }
 
         [RequireCustomPermission(1)]
         [Command("unban")]
-        public async Task UnbanUserAsync()
+        public async Task UnbanUserAsync(ulong discordId)
         {
 
         }
@@ -92,22 +92,15 @@ namespace MiraBot.Modules
         }
 
         [Command("listpermissionsfor")]
-        public async Task ListPermissionsFor(string username = null)
+        public async Task ListPermissionsFor(ulong discordId)
         {
-            User recipient;
-            if (username is null)
+            var recipient = await _handler.FindUserByDiscordIdAsync(discordId);
+            if (recipient is null)
             {
-                recipient = await _handler.FindUserByDiscordIdAsync(Context.User.Id);
+                await Context.Channel.SendMessageAsync("Could not find a user with that Discord ID.");
+                return;
             }
-            else
-            {
-                recipient = await _handler.FindUserByNameAsync(username);
-                if (recipient is null)
-                {
-                    await Context.Channel.SendMessageAsync("Could not find a user with that username.");
-                    return;
-                }
-            }
+
             await Context.Channel.SendMessageAsync(_handler.ListPermissionsAsync(recipient));
         }
     }

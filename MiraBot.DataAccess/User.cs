@@ -17,6 +17,8 @@ public partial class User
 
     public bool? UsesAmericanDateFormat { get; set; }
 
+    public bool IsBanned { get; set; }
+
     public virtual ICollection<Ingredient> Ingredients { get; set; } = new List<Ingredient>();
 
     public virtual ICollection<Meal> Meals { get; set; } = new List<Meal>();
