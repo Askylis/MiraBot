@@ -8,14 +8,13 @@ namespace MiraBot.Miraminders
     {
         private static List<UserNameAndId> _cache = new();
 
-
-        private readonly IMiramindersRepository _repository;
+        private readonly UsersRepository _repository;
         private readonly ILogger<UsersCache> _logger;
 
-        public UsersCache(IMiramindersRepository repository, ILogger<UsersCache> logger)
+        public UsersCache(ILogger<UsersCache> logger, UsersRepository usersRepository)
         {
-            _repository = repository;
             _logger = logger;
+            _repository = usersRepository;
         }
 
 

@@ -93,6 +93,9 @@ public partial class MiraBotContext : DbContext
             entity.Property(e => e.Description)
                 .HasMaxLength(100)
                 .IsUnicode(false);
+            entity.Property(e => e.Name)
+                .HasMaxLength(32)
+                .IsUnicode(false);
         });
 
         modelBuilder.Entity<Reminder>(entity =>

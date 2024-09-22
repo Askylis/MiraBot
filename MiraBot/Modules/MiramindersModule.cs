@@ -4,6 +4,7 @@ using Fergun.Interactive;
 using Microsoft.Extensions.DependencyInjection;
 using MiraBot.DataAccess;
 using MiraBot.Miraminders;
+using MiraBot.Permissions;
 
 namespace MiraBot.Modules
 {
@@ -31,7 +32,7 @@ namespace MiraBot.Modules
             _serviceProvider = serviceProvider;
         }
 
-
+        [NotBanned]
         [SlashCommand("remind", "Set a new reminder")]
         public async Task GetNewReminderAsync(string input)
         {
@@ -46,7 +47,7 @@ namespace MiraBot.Modules
             await ReplyAsync(await handler.ParseReminderAsync(input, Context.User.Id));
         }
 
-
+        [NotBanned]
         [SlashCommand("remindcancel", "Cancel a reminder that either you own, or that someone sent to you.")]
         public async Task CancelReminderAsync()
         {
@@ -83,6 +84,7 @@ namespace MiraBot.Modules
             }
         }
 
+        [NotBanned]
         [SlashCommand("remindlist", "List all of your active reminders.")]
         public async Task ListRemindersAsync()
         {
@@ -97,6 +99,7 @@ namespace MiraBot.Modules
             await SendLongMessageAsync(reminders);
         }
 
+        [NotBanned]
         [SlashCommand("remindfind", "Search your reminders that are saved by a keyword.")]
         public async Task FindReminderAsync(string word)
         {
@@ -214,7 +217,7 @@ namespace MiraBot.Modules
             else
             {
                 await SendLongMessageAsync(messages);
-                selection = await _helpers.GetValidNumberAsync(0, messages.Count);
+                selection = await _helpers.GetValidNumberAsync(0, messages.Count, Context);
                 selection--;
             }
 

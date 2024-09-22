@@ -6,14 +6,16 @@ namespace MiraBot.DataAccess.Repositories
     public class GroceryAssistantRepository : IGroceryAssistantRepository
     {
         private readonly DatabaseOptions _databaseOptions;
-        public GroceryAssistantRepository(IOptions<DatabaseOptions> databaseOptions)
+        private readonly UsersRepository _usersRepository;
+        public GroceryAssistantRepository(IOptions<DatabaseOptions> databaseOptions, UsersRepository usersRepository)
         {
             _databaseOptions = databaseOptions.Value;
+            _usersRepository = usersRepository;
         }
 
         public async Task AddMealAsync(string mealName, List<string> ingredients, ulong discordId, DateOnly? date)
         {
-            var user = await GetUserByDiscordId(discordId);
+            var user = await _usersRepository.GetUserByDiscordIdAsync(discordId);
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
                 var meal = new Meal
@@ -41,7 +43,7 @@ namespace MiraBot.DataAccess.Repositories
 
         public async Task DeleteMealAsync(int mealId, ulong discordId)
         {
-            var user = await GetUserByDiscordId(discordId);
+            var user = await _usersRepository.GetUserByDiscordIdAsync(discordId);
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
                 var meal = await context.Meals
@@ -52,39 +54,9 @@ namespace MiraBot.DataAccess.Repositories
             }
         }
 
-        public async Task<bool> UserExistsAsync(ulong discordId)
-        {
-            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
-            {
-                return await context.Users.AnyAsync(u => u.DiscordId == discordId);
-            }
-        }
-
-        public async Task AddNewUserAsync(User user)
-        {
-            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
-            {
-                context.Users.Add(user);
-                await context.SaveChangesAsync();
-            }
-        }
-
-        public async Task<User> GetUserByDiscordId(ulong discordId)
-        {
-            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
-            {
-                return await GetUserByDiscordId(discordId, context);
-            }
-        }
-
-        private async Task<User> GetUserByDiscordId(ulong discordId, MiraBotContext ctx)
-        {
-            return await ctx.Users.FirstOrDefaultAsync(u => u.DiscordId == discordId);
-        }
-
         public async Task<List<Meal>> GetAllMealsAsync(ulong discordId)
         {
-            var user = await GetUserByDiscordId(discordId);
+            var user = await _usersRepository.GetUserByDiscordIdAsync(discordId);
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
                 return await context.Meals
@@ -108,7 +80,7 @@ namespace MiraBot.DataAccess.Repositories
 
         public async Task<int> CountMealsByUserAsync(ulong discordId)
         {
-            var user = await GetUserByDiscordId(discordId);
+            var user = await _usersRepository.GetUserByDiscordIdAsync(discordId);
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
                 return context.Meals.Count(m => m.OwnerId == user.UserId);
@@ -117,7 +89,7 @@ namespace MiraBot.DataAccess.Repositories
 
         public async Task<bool> IsDuplicateNameAsync(string name, ulong discordId)
         {
-            var user = await GetUserByDiscordId(discordId);
+            var user = await _usersRepository.GetUserByDiscordIdAsync(discordId);
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
                 var upperName = name.ToUpper();

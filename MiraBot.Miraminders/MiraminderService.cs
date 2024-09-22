@@ -9,23 +9,25 @@ namespace MiraBot.Miraminders
 {
     public class MiraminderService
     {
-        private readonly IMiramindersRepository _repository;
+        private readonly IMiramindersRepository _remindersRepository;
+        private readonly UsersRepository _usersRepository;
         private readonly ILogger<MiraminderService> _logger;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly UsersCache _usersCache;
 
         public MiraminderService(IMiramindersRepository repository, ILogger<MiraminderService> logger, 
-            IDateTimeProvider dateTimeProvider, UsersCache usersCache)
+            IDateTimeProvider dateTimeProvider, UsersCache usersCache, UsersRepository usersRepository)
         {
-            _repository = repository;
+            _remindersRepository = repository;
             _logger = logger;
             _dateTimeProvider = dateTimeProvider;
             _usersCache = usersCache;
+            _usersRepository = usersRepository;
         }
 
         public async Task<string?> GetUserTimeZoneAsync(ulong discordId)
         {
-            var user = await _repository.GetUserByDiscordIdAsync(discordId)
+            var user = await _usersRepository.GetUserByDiscordIdAsync(discordId)
                 .ConfigureAwait(false);
 
             return user?.Timezone;
@@ -33,33 +35,33 @@ namespace MiraBot.Miraminders
 
         public async Task<User?> GetUserAsync(int userId)
         {
-            return await _repository.GetUserByUserIdAsync(userId)
+            return await _usersRepository.GetUserByUserIdAsync(userId)
                 .ConfigureAwait(false);
         }
 
         public async Task<User> EnsureUserExistsAsync(ulong discordId, string username)
         {
-            var user = await _repository.GetUserByDiscordIdAsync(discordId);
+            var user = await _usersRepository.GetUserByDiscordIdAsync(discordId);
             if (user is not null)
             {
                 return user;
             }
 
             var newUser = new User { DiscordId = discordId, UserName = username };
-            await _repository.AddNewUserAsync(newUser);
+            await _usersRepository.AddNewUserAsync(newUser);
             await _usersCache.RefreshCacheAsync();
             return newUser;
         }
 
         public async Task<User?> GetUserByNameAsync(string userName)
         {
-            return await _repository.GetUserByNameAsync(userName)
+            return await _usersRepository.GetUserByNameAsync(userName)
                 .ConfigureAwait(false);
         }
 
         public async Task<User?> GetUserByDiscordIdAsync(ulong discordId)
         {
-            return await _repository.GetUserByDiscordIdAsync(discordId);
+            return await _usersRepository.GetUserByDiscordIdAsync(discordId);
         }
 
         public static bool IsValidTimezone(string timezoneId)
@@ -71,8 +73,8 @@ namespace MiraBot.Miraminders
 
         public async Task AddReminderAsync(Reminder reminder)
         {
-            var owner = await _repository.GetUserByUserIdAsync(reminder.OwnerId);
-            await _repository.AddReminderAsync(reminder);
+            var owner = await _usersRepository.GetUserByUserIdAsync(reminder.OwnerId);
+            await _remindersRepository.AddReminderAsync(reminder);
             _logger.LogDebug("Reminder added by {OwnerUserName}!", owner.UserName);
         }
 
@@ -86,13 +88,13 @@ namespace MiraBot.Miraminders
                 .AddMonths(reminder.InMonths)
                 .AddYears(reminder.InYears);
             reminder.IsCompleted = false;
-            await _repository.UpdateReminderAsync(reminder);
+            await _remindersRepository.UpdateReminderAsync(reminder);
         }
 
         public async Task CancelReminderAsync(Reminder reminder)
         {
             reminder.IsRecurring = false;
-            await _repository.RemoveReminderAsync(reminder.ReminderId);
+            await _remindersRepository.RemoveReminderAsync(reminder.ReminderId);
         }
 
         public async Task FindReminderAsync(Reminder reminder)
@@ -121,23 +123,23 @@ namespace MiraBot.Miraminders
 
         public async Task AddTimezoneToUserAsync(ulong discordId, string timezoneId)
         {
-            var user = await _repository.GetUserByDiscordIdAsync(discordId)
+            var user = await _usersRepository.GetUserByDiscordIdAsync(discordId)
                 .ConfigureAwait(false);
 
             if (user is not null)
             {
                 user.Timezone = timezoneId;
-                await _repository.ModifyUserAsync(user);
+                await _usersRepository.ModifyUserAsync(user);
             }
         }
 
         public async Task AddDateFormatToUserAsync(ulong discordId, bool isAmerican)
         {
-            var user = await _repository.GetUserByDiscordIdAsync(discordId)
+            var user = await _usersRepository.GetUserByDiscordIdAsync(discordId)
                 .ConfigureAwait(false);
 
             user.UsesAmericanDateFormat = isAmerican;
-            await _repository.ModifyUserAsync(user);
+            await _usersRepository.ModifyUserAsync(user);
         }
 
         public static string CreateTimezoneFile()
@@ -153,7 +155,7 @@ namespace MiraBot.Miraminders
             var response = new StringBuilder();
             var messages = new List<string>();
             int counter = 1;
-            var owner = await _repository.GetUserByUserIdAsync(reminders[0].OwnerId);
+            var owner = await _usersRepository.GetUserByUserIdAsync(reminders[0].OwnerId);
 
             foreach (var reminder in reminders)
             {

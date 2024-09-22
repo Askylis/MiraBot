@@ -9,9 +9,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Discord.Net" Version="3.15.3" />
-    <PackageReference Include="Fergun.Interactive" Version="1.7.7" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.6">
+    <PackageReference Include="Discord.Net" Version="3.16.0" />
+    <PackageReference Include="Fergun.Interactive" Version="1.8.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.8">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
@@ -24,6 +24,7 @@
     <ProjectReference Include="..\MiraBot.DataAccess\MiraBot.DataAccess.csproj" />
     <ProjectReference Include="..\MiraBot.GroceryAssistant\MiraBot.GroceryAssistance.csproj" />
     <ProjectReference Include="..\MiraBot.Miraminders\MiraBot.Miraminders.csproj" />
+    <ProjectReference Include="..\MiraBot.Permissions\MiraBot.Permissions.csproj" />
   </ItemGroup>
 
   <ItemGroup>
