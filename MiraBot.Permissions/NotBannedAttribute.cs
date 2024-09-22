@@ -20,8 +20,18 @@ namespace MiraBot.Permissions
 
             if (await handler.IsBannedAsync(context.User.Id))
             {
+                if (context.Interaction.HasResponded)
+                {
+                    await context.Interaction.FollowupAsync("You have been banned from using Mira. You do not have access to any commands.");
+                }
+                else
+                {
+                    await context.Interaction.RespondAsync("You have been banned from using Mira. You do not have access to any commands.");
+                }
+
                 return await Task.FromResult(PreconditionResult.FromError("User is banned."));
             }
+
             else return await Task.FromResult(PreconditionResult.FromSuccess());
         }
     }
