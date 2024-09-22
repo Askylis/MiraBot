@@ -32,8 +32,22 @@ namespace MiraBot.Modules
 
                 if (recipient != null && meal != null)
                 {
+                    if (await _gaRepository.IsDuplicateNameAsync(meal.Name, recipient.DiscordId))
+                    {
+                        string newName;
+                        int counter = 1;
+                        await RespondAsync($"The name of this shared meal is {meal.Name}, but you already have a meal with that name.");
+                        await RespondAsync("I'm going to set the name of this meal to a default name, and you can edit it later.");
+                        do
+                        {
+                            newName = $"{meal.Name}_{counter}";
+                            counter++;
+                        }
+                        while (await _gaRepository.IsDuplicateNameAsync(newName, recipient.DiscordId));
+                        meal.Name = newName;
+                    }
                     await _gaRepository.AddMealAsync(meal.Name, ingredients, Context.User.Id, meal.Recipe, null);
-                    await RespondAsync("Added this recipe to your saved meals!");
+                    await RespondAsync($"Added \"{meal.Name}\" to your saved meals!");
 
                     if (Context.Interaction is SocketMessageComponent component)
                     {
