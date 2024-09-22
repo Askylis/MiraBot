@@ -36,7 +36,7 @@ namespace MiraBot.Modules
         [SlashCommand("gaadd", "Add a new meal and associated ingredients.")]
         public async Task AddMealAsync()
         {
-            string recipe = null;
+            string? recipe = null;
             await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
             await RespondAsync("What's the name of your new meal?");
             string mealName = await GetValidNameAsync(isIngredient: false);
@@ -369,7 +369,38 @@ namespace MiraBot.Modules
 
         public async Task<bool> UserWantsToAddRecipe()
         {
+            bool isValid = false;
+            var wantsRecipe = false;
+            await ReplyAsync("Do you want to add a recipe to this meal? Y/N");
 
+            while (!isValid)
+            {
+                var response = await _interactiveService.NextMessageAsync(
+                        x => x.Author.Id == Context.User.Id && x.Channel.Id == Context.Channel.Id,
+                        timeout: TimeSpan.FromMinutes(2));
+
+                if (!response.IsSuccess)
+                {
+                    await ReplyAsync("You did not respond in time.");
+                    break;
+                }
+
+                if (response.Value.Content.Equals("y", StringComparison.OrdinalIgnoreCase))
+                {
+                    wantsRecipe = true;
+                    isValid = true;
+                }
+                else if (response.Value.Content.Equals("n", StringComparison.OrdinalIgnoreCase))
+                {
+                    isValid = true;
+                }
+                else
+                {
+                    await ReplyAsync("You did not enter a valid response.");
+                }
+            }
+
+            return wantsRecipe;
         }
 
 
@@ -413,7 +444,7 @@ namespace MiraBot.Modules
         public async Task<string> GetRecipeAsync()
         {
             var isValid = false;
-            string recipe = String.Empty;
+            string recipe = string.Empty;
 
             while (!isValid)
             {
