@@ -58,9 +58,13 @@ namespace MiraBot.Permissions
             return await _repository.UserHasPermissionAsync(userId, permissionId);
         }
 
-        public async Task<string> ListAllAsync()
+        public async Task<string> ListAllAsync(List<Permission> permissions = null)
         {
-            var permissions = await _repository.GetAllAsync();
+            if (permissions is null)
+            {
+                permissions = await _repository.GetAllAsync();
+            }
+
             var sb = new StringBuilder();
             int counter = 1;
             foreach (var permission in permissions)
