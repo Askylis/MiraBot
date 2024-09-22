@@ -45,7 +45,7 @@ namespace MiraBot.Modules
                 return;
             }
             var ingredients = await AddIngredientsAsync();
-            if (UserWantsToAddRecipe)
+            if (await UserWantsToAddRecipe())
             {
                 recipe = await GetRecipeAsync();
             }
@@ -78,7 +78,7 @@ namespace MiraBot.Modules
                 {
                     break;
                 }
-                await _groceryAssistant.DeleteMealAsync(meals[index].MealId, Context.User.Id);
+                await _groceryAssistant.DeleteMealAsync(meals[index].MealId);
                 await ReplyAsync($"Okay, removed {meals[index].Name}! Need to remove anything else?");
                 meals.RemoveAt(index);
             }
@@ -365,6 +365,11 @@ namespace MiraBot.Modules
             var share = mealsWithRecipes[index];
             await _comms.SendRecipeAsync(recipient, mealsWithRecipes[index]);
             await ReplyAsync($"Okay, sent that recipe to {recipient.UserName}!");
+        }
+
+        public async Task<bool> UserWantsToAddRecipe()
+        {
+
         }
 
 

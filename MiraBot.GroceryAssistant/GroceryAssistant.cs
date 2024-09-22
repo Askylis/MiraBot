@@ -28,9 +28,9 @@ namespace MiraBot.GroceryAssistance
             await _groceryAssistantRepository.AddMealAsync(mealName, ingredients, discordId, recipe, date);
         }
 
-        public async Task DeleteMealAsync(int mealId, ulong discordId)
+        public async Task DeleteMealAsync(int mealId)
         {
-            await _groceryAssistantRepository.DeleteMealAsync(mealId, discordId);
+            await _groceryAssistantRepository.DeleteMealAsync(mealId);
         }
 
         public async Task EditMealAsync(Meal meal)

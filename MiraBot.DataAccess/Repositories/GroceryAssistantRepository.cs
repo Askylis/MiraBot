@@ -50,16 +50,14 @@ namespace MiraBot.DataAccess.Repositories
             }
         }
 
-        public async Task DeleteMealAsync(int mealId, ulong discordId)
+        public async Task DeleteMealAsync(int mealId)
         {
-            var user = await _usersRepository.GetUserByDiscordIdAsync(discordId);
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
-                var meal = await context.Meals
-                .Include(m => m.Ingredients)
-                .FirstOrDefaultAsync(m => m.MealId == mealId && m.OwnerId == user.UserId);
-                context.Meals.Remove(meal);
-                await context.SaveChangesAsync();
+                var meal = await context.Meals.FirstOrDefaultAsync(m => m.MealId == mealId);
+                meal.IsDeleted = true;
+                await context.SaveChangesAsync()
+                    .ConfigureAwait(false);
             }
         }
 
