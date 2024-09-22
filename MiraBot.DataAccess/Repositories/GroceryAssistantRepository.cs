@@ -13,7 +13,7 @@ namespace MiraBot.DataAccess.Repositories
             _usersRepository = usersRepository;
         }
 
-        public async Task AddMealAsync(string mealName, List<string> ingredients, ulong discordId, DateOnly? date)
+        public async Task AddMealAsync(string mealName, List<string> ingredients, ulong discordId, string? recipe, DateOnly? date)
         {
             var user = await _usersRepository.GetUserByDiscordIdAsync(discordId);
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
@@ -23,7 +23,8 @@ namespace MiraBot.DataAccess.Repositories
                     Name = mealName,
                     OwnerId = user.UserId,
                     Date = date,
-                    Ingredients = new List<Ingredient>()
+                    Ingredients = new List<Ingredient>(),
+                    Recipe = recipe
                 };
 
                 foreach (var ingredientName in ingredients)
@@ -41,16 +42,42 @@ namespace MiraBot.DataAccess.Repositories
             }
         }
 
-        public async Task DeleteMealAsync(int mealId, ulong discordId)
+        public async Task<Meal> FindAsync(int mealId)
         {
-            var user = await _usersRepository.GetUserByDiscordIdAsync(discordId);
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
-                var meal = await context.Meals
-                .Include(m => m.Ingredients)
-                .FirstOrDefaultAsync(m => m.MealId == mealId && m.OwnerId == user.UserId);
-                context.Meals.Remove(meal);
-                await context.SaveChangesAsync();
+                return await context.Meals.FirstOrDefaultAsync(m => m.MealId == mealId && !m.IsDeleted);
+            }
+        }
+
+        public async Task DeleteMealAsync(int mealId)
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                var meal = await context.Meals.FirstOrDefaultAsync(m => m.MealId == mealId);
+                meal.IsDeleted = true;
+                await context.SaveChangesAsync()
+                    .ConfigureAwait(false);
+            }
+        }
+
+        public async Task EditMealAsync(Meal update)
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                var meal = context.Meals.Find(update.MealId);
+                if (meal is null)
+                {
+                    return;
+                }
+
+                context.Entry(meal).CurrentValues.SetValues(update);
+                if (!meal.Recipe.Any())
+                {
+                    meal.Recipe = update.Recipe;
+                }
+                await context.SaveChangesAsync()
+                    .ConfigureAwait(false);
             }
         }
 
@@ -61,7 +88,7 @@ namespace MiraBot.DataAccess.Repositories
             {
                 return await context.Meals
                .Include(m => m.Ingredients)
-               .Where(m => m.OwnerId == user.UserId)
+               .Where(m => m.OwnerId == user.UserId && !m.IsDeleted)
                .ToListAsync();
             }
         }
@@ -94,7 +121,7 @@ namespace MiraBot.DataAccess.Repositories
             {
                 var upperName = name.ToUpper();
                 var count = await context.Meals
-                    .CountAsync(m => m.Name.ToUpper() == upperName && m.OwnerId == user.UserId);
+                    .CountAsync(m => m.Name.ToUpper() == upperName && m.OwnerId == user.UserId && !m.IsDeleted);
                 return count > 0;
             }
         }
