@@ -46,7 +46,7 @@ namespace MiraBot.DataAccess.Repositories
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
-                return await context.Meals.FirstOrDefaultAsync(m => m.MealId == mealId);
+                return await context.Meals.FirstOrDefaultAsync(m => m.MealId == mealId && !m.IsDeleted);
             }
         }
 
@@ -88,7 +88,7 @@ namespace MiraBot.DataAccess.Repositories
             {
                 return await context.Meals
                .Include(m => m.Ingredients)
-               .Where(m => m.OwnerId == user.UserId)
+               .Where(m => m.OwnerId == user.UserId && !m.IsDeleted)
                .ToListAsync();
             }
         }
@@ -121,7 +121,7 @@ namespace MiraBot.DataAccess.Repositories
             {
                 var upperName = name.ToUpper();
                 var count = await context.Meals
-                    .CountAsync(m => m.Name.ToUpper() == upperName && m.OwnerId == user.UserId);
+                    .CountAsync(m => m.Name.ToUpper() == upperName && m.OwnerId == user.UserId && !m.IsDeleted);
                 return count > 0;
             }
         }
