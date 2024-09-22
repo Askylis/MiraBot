@@ -44,14 +44,16 @@ namespace MiraBot.Modules
         [Command("ban")]
         public async Task BanUserAsync(ulong discordId)
         {
-
+            await _handler.BanUserAsync(discordId);
+            await Context.Channel.SendMessageAsync($"This user has been banned.");
         }
 
         [RequireCustomPermission(1)]
         [Command("unban")]
         public async Task UnbanUserAsync(ulong discordId)
         {
-
+            await _handler.UnbanUserAsync(discordId);
+            await Context.Channel.SendMessageAsync($"This user has been unbanned.");
         }
 
         [RequireCustomPermission(1)]

@@ -74,6 +74,26 @@ namespace MiraBot.DataAccess.Repositories
             }
         }
 
+        public async Task BanUserAsync(ulong discordId)
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                var user = await context.Users.FirstOrDefaultAsync(u => u.DiscordId == discordId).ConfigureAwait(false);
+                user.IsBanned = true;
+                await context.SaveChangesAsync().ConfigureAwait(false);
+            }
+        }
+
+        public async Task UnbanUserAsync(ulong discordId)
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                var user = await context.Users.FirstOrDefaultAsync(u => u.DiscordId == discordId).ConfigureAwait(false);
+                user.IsBanned = false;
+                await context.SaveChangesAsync().ConfigureAwait(false);
+            }
+        }
+
         public async Task<bool> UserIsBannedAsync(ulong discordId)
         {
             var user = await _usersRepository.GetUserByDiscordIdAsync(discordId);
