@@ -7,12 +7,10 @@ namespace MiraBot.Modules
     public class PermissionsModule : ModuleBase<SocketCommandContext>
     {
         private readonly PermissionsHandler _handler;
-        private readonly ModuleHelpers _helpers;
 
-        public PermissionsModule(PermissionsHandler handler, ModuleHelpers helpers)
+        public PermissionsModule(PermissionsHandler handler)
         {
             _handler = handler;
-            _helpers = helpers;
         }
 
         [RequireCustomPermission(1)]
