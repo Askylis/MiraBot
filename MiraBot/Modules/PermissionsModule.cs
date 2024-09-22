@@ -30,26 +30,26 @@ namespace MiraBot.Modules
                 recipient = await _handler.FindUserByNameAsync(username);
                 if (recipient is null)
                 {
-                    await ReplyAsync("Could not find a user with that username.");
+                    await Context.Channel.SendMessageAsync("Could not find a user with that username.");
                     return;
                 }
             }
             
-            await ReplyAsync($"Which permission would you like to add to user **\"{recipient.UserName}\"**?");
+            await Context.Channel.SendMessageAsync($"Which permission would you like to add to user **\"{recipient.UserName}\"**?");
             var validPerms = await _handler.GetAllAsync();
             validPerms = validPerms
                 .Where(p => !recipient.Permissions.Any(rp => rp.PermissionId == p.PermissionId))
                 .ToList();
             if (validPerms.Count == 0)
             {
-                await ReplyAsync("There are no permissions available to assign to this user.");
+                await Context.Channel.SendMessageAsync("There are no permissions available to assign to this user.");
                 return;
             }
 
-            await ReplyAsync(await _handler.ListAllAsync(validPerms));
+            await Context.Channel.SendMessageAsync(await _handler.ListAllAsync(validPerms));
             int selection = await _helpers.GetValidNumberAsync(1, permissions.Count, Context);
             await _handler.AddPermissionToUserAsync(recipient, permissions[selection - 1]);
-            await ReplyAsync($"User **{recipient.UserName}** has been given permission **{permissions[selection - 1].Name}**.");
+            await Context.Channel.SendMessageAsync($"User **{recipient.UserName}** has been given permission **{permissions[selection - 1].Name}**.");
         }
 
         [RequireCustomPermission(1)]
@@ -79,7 +79,7 @@ namespace MiraBot.Modules
         {
             await _handler.AddNewPermissionAsync(permissionName, description);
             var permission = await _handler.FindPermissionAsync(permissionName);
-            await ReplyAsync($"Added permission \"**{permissionName}**\" with permissionId **{permission.PermissionId}**.");
+            await Context.Channel.SendMessageAsync($"Added permission \"**{permissionName}**\" with permissionId **{permission.PermissionId}**.");
         }
 
         [RequireCustomPermission(1)]
@@ -103,11 +103,11 @@ namespace MiraBot.Modules
             var permissions = await _handler.GetAllAsync();
             if (permissions.Count == 0)
             {
-                await ReplyAsync("There are no permissions currently saved.");
+                await Context.Channel.SendMessageAsync("There are no permissions currently saved.");
                 return;
             }
 
-            await ReplyAsync(await _handler.ListAllAsync());
+            await Context.Channel.SendMessageAsync(await _handler.ListAllAsync());
         }
 
         [Command("listpermissionsfor")]
@@ -123,11 +123,11 @@ namespace MiraBot.Modules
                 recipient = await _handler.FindUserByNameAsync(username);
                 if (recipient is null)
                 {
-                    await ReplyAsync("Could not find a user with that username.");
+                    await Context.Channel.SendMessageAsync("Could not find a user with that username.");
                     return;
                 }
             }
-            await ReplyAsync(_handler.ListPermissionsAsync(recipient));
+            await Context.Channel.SendMessageAsync(_handler.ListPermissionsAsync(recipient));
         }
     }
 }
