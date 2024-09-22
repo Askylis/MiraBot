@@ -13,6 +13,7 @@ using MiraBot.Permissions;
 using Fergun.Interactive;
 using MiraBot.Modules;
 using MiraBot.Common;
+using Discord.Commands;
 
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -22,8 +23,8 @@ configBuilder.AddEnvironmentVariables();
 configBuilder.AddJsonFile("appsettings.json");
 configBuilder.AddUserSecrets<Program>();
 var config = configBuilder.Build();
-
 builder.Services.AddSingleton<DiscordSocketClient>();
+builder.Services.AddSingleton<CommandService>();
 builder.Services.AddSingleton(x =>
 {
     var discordSocketClient = x.GetRequiredService<DiscordSocketClient>();
@@ -33,6 +34,7 @@ builder.Services.AddSingleton(new InteractiveConfig { DefaultTimeout = TimeSpan.
 builder.Services.AddSingleton<InteractiveService>();
 builder.Services.AddSingleton<RemindersCache>();
 builder.Services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
+builder.Services.AddHostedService<CommandHandlingService>();
 builder.Services.AddHostedService<InteractionHandlingService>();
 builder.Services.AddHostedService<DiscordStartupService>();
 builder.Services.AddHostedService<RemindersProcessingService>();

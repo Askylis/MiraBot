@@ -35,7 +35,6 @@ namespace MiraBot.Modules
                 }
             }
             
-            await Context.Channel.SendMessageAsync($"Which permission would you like to add to user **\"{recipient.UserName}\"**?");
             var validPerms = await _handler.GetAllAsync();
             validPerms = validPerms
                 .Where(p => !recipient.Permissions.Any(rp => rp.PermissionId == p.PermissionId))
@@ -45,6 +44,8 @@ namespace MiraBot.Modules
                 await Context.Channel.SendMessageAsync("There are no permissions available to assign to this user.");
                 return;
             }
+
+            await Context.Channel.SendMessageAsync($"Which permission would you like to add to user **\"{recipient.UserName}\"**?");
 
             await Context.Channel.SendMessageAsync(await _handler.ListAllAsync(validPerms));
             int selection = await _helpers.GetValidNumberAsync(1, permissions.Count, Context);
