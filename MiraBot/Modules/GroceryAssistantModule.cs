@@ -8,6 +8,7 @@ using MiraBot.Permissions;
 
 namespace MiraBot.Modules
 {
+    [NotBanned]
     public class GroceryAssistantModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly GroceryAssistant _groceryAssistant;
@@ -32,7 +33,6 @@ namespace MiraBot.Modules
             _comms = comms;
         }
 
-        [NotBanned]
         [SlashCommand("gaadd", "Add a new meal and associated ingredients.")]
         public async Task AddMealAsync()
         {
@@ -54,7 +54,7 @@ namespace MiraBot.Modules
             await ReplyAsync($"All done! Added \"{mealName}\" and its {ingredients.Count} ingredients!");
         }
 
-        [NotBanned]
+
         [SlashCommand("gadelete", "Lets you delete one of your saved meals.")]
         public async Task DeleteMealAsync()
         {
@@ -85,7 +85,7 @@ namespace MiraBot.Modules
             }
         }
 
-        [NotBanned]
+
         [SlashCommand("gaedit", "Lets you edit one of your saved meals.")]
         public async Task EditMealAsync()
         {
@@ -171,7 +171,7 @@ namespace MiraBot.Modules
             await ReplyAsync("All done! That meal has been updated!");
         }
 
-        [NotBanned]
+
         [SlashCommand("galist", "Lists all meals, along with associated ingredients, that are owned by you.")]
         public async Task ListMealsAsync()
         {
@@ -196,7 +196,7 @@ namespace MiraBot.Modules
             }
         }
 
-        [NotBanned]
+
         [SlashCommand("ga", "Generates a new list of grocery ideas.")]
         public async Task GenerateMealsListAsync()
         {
@@ -237,15 +237,20 @@ namespace MiraBot.Modules
             await SendSelectionFileAsync(selectedMeals);
             var dateNow = DateOnly.FromDateTime(DateTime.Now);
             var updates = new List<Task>();
+            var files = new List<Task>();
             foreach (var meal in selectedMeals)
             {
                 List<string> ingredients = meal.Ingredients.Select(i => i.Name).ToList();
                 updates.Add(_groceryAssistant.EditMealAsync(meal));
+                if (meal.Recipe is not null)
+                {
+                    files.Add(SendRecipeFileAsync(meal.Recipe));
+                }
             }
             await Task.WhenAll(updates);
         }
 
-        [NotBanned]
+
         [SlashCommand("gaconvert", "Converts old Grocery Assistant meals files into database entries.")]
         public async Task ConvertMealsFileAsync()
         {
@@ -295,7 +300,7 @@ namespace MiraBot.Modules
             }
         }
 
-        [NotBanned]
+
         [SlashCommand("gaaddrecipe", "Add a recipe to an existing meal.")]
         public async Task AddRecipeAsync(int mealId = 0)
         {
@@ -334,7 +339,7 @@ namespace MiraBot.Modules
             await ReplyAsync($"Got it! Added that recipe to you meal \"{meal.Name}\"!");
         }
 
-        [NotBanned]
+
         [SlashCommand("gashare", "Share a recipe with another user.")]
         public async Task ShareRecipeAsync(string recipientName)
         {
@@ -476,18 +481,26 @@ namespace MiraBot.Modules
 
         public async Task SendListFileAsync(List<Meal> mealsList)
         {
-            var fileName = $"{Context.User.Username}ListResults.txt";
-            var filePath = _groceryAssistant.GetOutputPath(fileName);
-            _groceryAssistant.WriteListFile(filePath, mealsList);
-            await FollowupWithFileAsync(filePath);
+            var name = Path.ChangeExtension(Path.GetRandomFileName(), ".txt");
+            var path = Path.Combine(Path.GetTempPath(), name);
+            _groceryAssistant.WriteListFile(path, mealsList);
+            await FollowupWithFileAsync(path);
         }
 
         public async Task SendSelectionFileAsync(List<Meal> selectedMeals)
         {
-            var fileName = $"{Context.User.Username}OutputResults.txt";
-            var filePath = _groceryAssistant.GetOutputPath(fileName);
-            _groceryAssistant.WriteSelectionFile(filePath, selectedMeals);
-            await FollowupWithFileAsync(filePath);
+            var name = Path.ChangeExtension(Path.GetRandomFileName(), ".txt");
+            var path = Path.Combine(Path.GetTempPath(), name);
+            _groceryAssistant.WriteSelectionFile(path, selectedMeals);
+            await FollowupWithFileAsync(path);
+        }
+
+        public async Task SendRecipeFileAsync(string recipe)
+        {
+            var name = Path.ChangeExtension(Path.GetRandomFileName(), ".txt");
+            var path = Path.Combine(Path.GetTempPath(), name);
+            _groceryAssistant.WriteRecipeFile(path, recipe);
+            await FollowupWithFileAsync(path);
         }
 
         public async Task<string> GetValidNameAsync(bool isIngredient, string? name = null)

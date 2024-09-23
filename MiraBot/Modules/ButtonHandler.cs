@@ -1,8 +1,8 @@
-﻿using Discord;
-using Discord.Interactions;
+﻿using Discord.Interactions;
 using Discord.WebSocket;
 using MiraBot.DataAccess.Repositories;
-using System.Runtime.InteropServices;
+using MiraBot.Communication;
+using MiraBot.GroceryAssistance;
 
 namespace MiraBot.Modules
 {
@@ -10,11 +10,13 @@ namespace MiraBot.Modules
     {
         private readonly IGroceryAssistantRepository _gaRepository;
         private readonly UsersRepository _usersRepository;
+        private readonly GroceryAssistant _ga;
 
-        public ButtonHandler(IGroceryAssistantRepository repository, UsersRepository usersRepository)
+        public ButtonHandler(IGroceryAssistantRepository repository, UsersRepository usersRepository, GroceryAssistant ga)
         {
             _gaRepository = repository;
             _usersRepository = usersRepository;
+            _ga = ga;
         }
 
         [ComponentInteraction("yes_*")]
@@ -24,7 +26,7 @@ namespace MiraBot.Modules
             {
                 var recipient = await _usersRepository.GetUserByDiscordIdAsync(Context.User.Id);
                 var meal = await _gaRepository.FindAsync(mealId);
-                List<string> ingredients = new();
+                List<string> ingredients = [];
                 foreach (var ingredient in meal.Ingredients)
                 {
                     ingredients.Add(ingredient.Name);

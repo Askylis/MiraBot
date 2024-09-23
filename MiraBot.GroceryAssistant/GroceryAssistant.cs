@@ -10,7 +10,6 @@ namespace MiraBot.GroceryAssistance
     {
         private readonly IGroceryAssistantRepository _groceryAssistantRepository;
         private readonly UsersRepository _usersRepository;
-
         private readonly ILogger<GroceryAssistant> _logger;
 
         public GroceryAssistant(
@@ -324,12 +323,12 @@ namespace MiraBot.GroceryAssistance
             }
         }
 
-
-        public string GetOutputPath(string fileName)
+        public void WriteRecipeFile(string filePath, string recipe)
         {
-            string myDocumentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            string fullFilePath = Path.Combine(myDocumentsPath, fileName);
-            return fullFilePath;
+            using (StreamWriter writer = new(filePath))
+            {
+                writer.Write(recipe);
+            }
         }
     }
 }
