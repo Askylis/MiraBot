@@ -42,7 +42,7 @@ builder.Services.AddHostedService<RemindersProcessingService>();
 builder.Services.AddHostedService<UsersRefreshService>();
 builder.Services.Configure<DiscordOptions>(config.GetSection("Discord"));
 builder.Services.Configure<DatabaseOptions>(config.GetSection("Database"));
-builder.Services.Configure<ReminderOptions>(config.GetSection("Reminders"));
+builder.Services.Configure<MiraOptions>(config.GetSection("Reminders"));
 builder.Services.AddScoped<IGroceryAssistantRepository, GroceryAssistantRepository>();
 builder.Services.AddScoped<IMiramindersRepository, MiramindersRepository>();
 builder.Services.AddScoped<PermissionsRepository>();

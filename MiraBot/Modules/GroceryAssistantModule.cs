@@ -196,7 +196,7 @@ namespace MiraBot.Modules
             await RespondAsync("Gimme just a sec!");
             var meals = await _groceryAssistant.GetAllMealsAsync(Context.User.Id);
 
-            if (!meals.Any())
+            if (meals.Count == 0)
             {
                 await ReplyAsync("You have no meals saved.");
                 return;
