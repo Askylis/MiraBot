@@ -97,7 +97,7 @@ namespace MiraBot.Modules
 
             if (meals.Count < 0)
             {
-                await ReplyAsync("Sorry, doesn't look like you have any saved meals! Add some meals and get back to me! :)");
+                await ReplyAsync("Sorry, doesn't look like you have any saved meals! You can add meals by using /gaadd.");
                 return;
             }
 
@@ -337,6 +337,13 @@ namespace MiraBot.Modules
             meal.Recipe = await GetRecipeAsync();
             await _groceryAssistant.EditMealAsync(meal);
             await ReplyAsync($"Got it! Added that recipe to you meal \"{meal.Name}\"!");
+        }
+
+        [SlashCommand("gagetrecipe", "Retrieve a recipe for a specified meal.")]
+        public async Task GetRecipleAsync()
+        {
+            await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
+
         }
 
 
