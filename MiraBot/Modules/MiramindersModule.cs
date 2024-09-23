@@ -8,6 +8,7 @@ using MiraBot.Permissions;
 
 namespace MiraBot.Modules
 {
+    [NotBanned]
     public class MiramindersModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly InteractiveService _interactive;
@@ -32,7 +33,7 @@ namespace MiraBot.Modules
             _serviceProvider = serviceProvider;
         }
 
-        [NotBanned]
+
         [SlashCommand("remind", "Set a new reminder")]
         public async Task GetNewReminderAsync(string input)
         {
@@ -47,7 +48,7 @@ namespace MiraBot.Modules
             await ReplyAsync(await handler.ParseReminderAsync(input, Context.User.Id));
         }
 
-        [NotBanned]
+
         [SlashCommand("remindcancel", "Cancel a reminder that either you own, or that someone sent to you.")]
         public async Task CancelReminderAsync()
         {
@@ -84,7 +85,7 @@ namespace MiraBot.Modules
             }
         }
 
-        [NotBanned]
+
         [SlashCommand("remindlist", "List all of your active reminders.")]
         public async Task ListRemindersAsync()
         {
@@ -99,7 +100,7 @@ namespace MiraBot.Modules
             await SendLongMessageAsync(reminders);
         }
 
-        [NotBanned]
+
         [SlashCommand("remindfind", "Search your reminders that are saved by a keyword.")]
         public async Task FindReminderAsync(string word)
         {

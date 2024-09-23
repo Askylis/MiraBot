@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MiraBot.DataAccess\MiraBot.DataAccess.csproj" />
+    <ProjectReference Include="..\MiraBot.GroceryAssistant\MiraBot.GroceryAssistance.csproj" />
   </ItemGroup>
 
 </Project>

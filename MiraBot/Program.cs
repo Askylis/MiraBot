@@ -20,9 +20,9 @@ using MiraBot.Communication;
 var builder = Host.CreateApplicationBuilder(args);
 
 var configBuilder = new ConfigurationBuilder();
-configBuilder.AddEnvironmentVariables();
 configBuilder.AddJsonFile("appsettings.json");
-configBuilder.AddUserSecrets<Program>();
+configBuilder.AddUserSecrets<Program>()
+    .AddEnvironmentVariables();
 var config = configBuilder.Build();
 builder.Services.AddSingleton<DiscordSocketClient>();
 builder.Services.AddSingleton<CommandService>();
