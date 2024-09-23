@@ -49,6 +49,10 @@ namespace MiraBot.Modules
             {
                 await ReplyAsync("Okay, go ahead and send me the recipe for this meal! Make sure to copy/paste it. Don't send a file or image.");
                 recipe = await GetRecipeAsync();
+                if (recipe.IsNullOrEmpty())
+                {
+                    return;
+                }
             }
             await _groceryAssistant.AddMealAsync(mealName, ingredients, Context.User.Id, recipe);
             await ReplyAsync($"All done! Added \"{mealName}\" and its {ingredients.Count} ingredients!");
@@ -116,9 +120,10 @@ namespace MiraBot.Modules
                     {
                         "Edit meal name.",
                         "Edit ingredients.",
-                        "Edit both."
+                        "Edit both.",
+                        "Modify the recipe."
                     };
-            await ReplyAsync("Do you want to edit the name, ingredients, or both?");
+            await ReplyAsync("Do you want to edit the name, ingredients, both, or modify its recipe?");
             await _components.GenerateMenuAsync(options,
                 "Choose what to edit.",
                 "edit-menu",
@@ -163,6 +168,18 @@ namespace MiraBot.Modules
                         selectedMeal.Ingredients.Add(new Ingredient { Name = ing, OwnerId = selectedMeal.OwnerId });
                     }
                     await _groceryAssistant.EditMealAsync(selectedMeal);
+                    break;
+                case 3:
+                    if (selectedMeal.Recipe.IsNullOrEmpty())
+                    {
+                        await AddRecipeAsync(false, selectedMeal.MealId);
+                    }
+                    else
+                    {
+                        await SendRecipeFileAsync(selectedMeal.Recipe);
+                        await ReplyAsync("Go ahead and modify it however you'd like, and send the edited version back to me when you're done!");
+                        await AddRecipeAsync(true, selectedMeal.MealId);
+                    }
                     break;
                 default:
                     await ReplyAsync("Something went SERIOUSLY wrong. How did you even manage this? It shouldn't be possible. Go yell at Sky or something I guess.");
@@ -302,12 +319,12 @@ namespace MiraBot.Modules
 
 
         [SlashCommand("gaaddrecipe", "Add a recipe to an existing meal.")]
-        public async Task AddRecipeAsync(int mealId = 0)
+        public async Task AddRecipeAsync(bool isEdit, int mealId = 0)
         {
-            Meal meal;
+            Meal meal = new();
             await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
 
-            if (mealId == 0)
+            if (mealId == 0 && !isEdit)
             {
                 var meals = await _groceryAssistant.GetAllMealsAsync(Context.User.Id);
                 if (meals.Count == 0)
@@ -328,22 +345,53 @@ namespace MiraBot.Modules
                 }
                 meal = meals[index];
             }
-            else
+            else if (isEdit)
             {
                 meal = await _groceryAssistant.FindAsync(mealId);
             }
-            
-            await ReplyAsync($"Okay, go ahead and send me your recipe for {meal.Name}! Please copy/paste it here, and don't send a file, image, or link.");
+            else
+            {
+                await ReplyAsync($"Okay, go ahead and send me your recipe for {meal.Name}! You can either copy/paste the recipe to me, or send it in a text file.");
+                meal = await _groceryAssistant.FindAsync(mealId);
+            }
             meal.Recipe = await GetRecipeAsync();
+            if (meal.Recipe.IsNullOrEmpty())
+            {
+                return;
+            }
             await _groceryAssistant.EditMealAsync(meal);
             await ReplyAsync($"Got it! Added that recipe to you meal \"{meal.Name}\"!");
         }
 
         [SlashCommand("gagetrecipe", "Retrieve a recipe for a specified meal.")]
-        public async Task GetRecipleAsync()
+        public async Task RetrieveRecipeAsync()
         {
+            Meal meal;
+            int mealId = 0;
+            await DeferAsync();
             await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
 
+            var all = await _groceryAssistant.GetAllMealsAsync(Context.User.Id);
+            var meals = all.Where(m => !m.Recipe.IsNullOrEmpty()).ToList();
+            if (meals.Count == 0)
+            {
+                await FollowupAsync("You don't have any meals that have a recipe.");
+                return;
+            }
+
+            await FollowupAsync("Which meal's recipe do you want to see?");
+            int index = await GetMealIndexAsync(meals,
+            "Choose which recipe you'd like to view.",
+            "recipe-menu",
+            "Add a recipe to this meal.",
+            Context);
+
+            if (index == -1)
+            {
+                return;
+            }
+            meal = meals[index];
+            await SendRecipeFileAsync(meal.Recipe);
         }
 
 
@@ -469,7 +517,19 @@ namespace MiraBot.Modules
                 if (!response.IsSuccess)
                 {
                     await ReplyAsync("You did not respond in time.");
-                    break;
+                    return string.Empty;
+                }
+
+                if (response.Value.Attachments.Count == 1)
+                {
+                    var attachment = response.Value.Attachments.FirstOrDefault();
+                    if (attachment == null || !attachment.Filename.EndsWith(".txt"))
+                    {
+                        await FollowupAsync("It looks like you tried to send a recipe file, but it's not in the correct format. Make sure that it's a .txt file.");
+                        continue;
+                    }
+
+                    return await _groceryAssistant.DownloadFileContentAsync(attachment.Url);
                 }
 
                 if (response.Value.Content.Length > maxRecipeLength)
