@@ -31,16 +31,16 @@ Her fourth module is a general use module, that includes `/register` so new user
 Mira is very much a work in progress and is nowhere near done. I plan to keep adding features to her until I'm content with what she's capable of. 
 
 ## What will you add to Mira?
-I plan to add some general use commands to her (including bug reporting and a help command that lists all available commands). I also plan on building some server management and moderation tools for Mira to help with server administration. 
-
-Additionally, I plan to add "consent" functionality. Since Mira can be used to message other users (either by sending them reminders, or sharing recipes), I plan to add blacklists and whitelists for each user. When a user receives a message through Mira from another user for the first time, instead of just sending the message, Mira will instead inform the recipient that `username` is trying to send them a `reminder`/`recipe`, and give the user the option to either allow or block that user. User blacklist and whitelist preferences will be able to be updated at any time with appropriate `/blacklist` and `/whitelist` commands. 
+I plan to add "consent" functionality. Since Mira can be used to message other users (either by sending them reminders, or sharing recipes), I plan to add blacklists and whitelists for each user. When a user receives a message through Mira from another user for the first time, instead of just sending the message, Mira will instead inform the recipient that `username` is trying to send them a `reminder`/`recipe`, and give the user the option to either allow or block that user. User blacklist and whitelist preferences will be able to be updated at any time with appropriate `/blacklist` and `/whitelist` commands. Additionally, I plan on building some server management and moderation tools for Mira to help with server administration.
 
 ## How do I use Mira?
-Mira takes advantage of Discord's slash commands. In a private chat with her (or in a server she's in), you can enter a `/` and see a list of all available commands. She has a suite of commands available for GroceryAssistant (including `/listmeals`, `/addmeal`, `/editmeal`, `/deletemeal`, and the main one, `/ga` which handles the process of actually selecting a user-defined number of random meals and presenting them to the user, along with their associated ingredients).
+Mira takes advantage of Discord's slash commands. In a private chat with her (or in a server she's in), you can enter a `/` and see a list of all available commands. New users will need to use `/register` before being able to access her functionality, since she'll need to gather some basic information about the user that's required for some of her functionality to work. Users can use `/help` to view all available commands, as well as a description of each command's functionality. 
+
+She has a suite of commands available for GroceryAssistant (including `/listmeals`, `/addmeal`, `/editmeal`, `/deletemeal`, and the main one, `/ga` which handles the process of actually selecting a user-defined number of random meals and presenting them to the user, along with their associated ingredients).
 
 Miraminders's main command is `/remind`, which allows you to configure custom reminders. Miraminders also contains `/remindcancel`, `/remindlist`, and `/remindfind`. 
 
-I will soon have a `/help` command, which will list all available commands, as well as their functionality. 
+Users can submit bug reports using `/bugreport`. 
 
 ## Why do you keep referring to Mira as "she"?
 Mira is the name of my server that I've owned for many years! And now, this Discord bot is named after her. While primarily a file server, she also hosts game servers for my friends and myself, and now she also hosts the Mira Discord bot! I've become very attached to my server, and she is very special to me. 
