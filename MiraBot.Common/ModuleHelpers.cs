@@ -206,7 +206,7 @@ namespace MiraBot.Common
             do
             {
                 var reponse = await _interactive.NextMessageAsync(x => x.Author.Id == context.User.Id && x.Channel.Id == context.Channel.Id,
-            timeout: TimeSpan.FromMinutes(2));
+            timeout: TimeSpan.FromMinutes(10));
 
                 if (!reponse.IsSuccess)
                 {
@@ -311,9 +311,29 @@ namespace MiraBot.Common
                 .ConfigureAwait(false);
         }
 
-        public async Task SaveBugAsync(Bug bug)
+        public async Task SaveBugAsync(Bug bug, ulong discordId)
         {
-            await _bugRepository.SaveBugAsync(bug);
+            await _bugRepository.SaveBugAsync(bug, discordId);
+        }
+
+        public async Task<List<Bug>> GetAllBugsAsync()
+        {
+            return await _bugRepository.GetAllAsync();
+        }
+
+        public async Task<Bug> GetNewestBugAsync()
+        {
+            return await _bugRepository.FindNewestBugAsync();
+        }
+
+        public async Task MarkBugAsFixedAsync(int bugId)
+        {
+            await _bugRepository.MarkBugAsFixedAsync(bugId);
+        }
+
+        public async Task<Bug> FindBugAsync(int bugId)
+        {
+            return await _bugRepository.FindBugAsync(bugId);
         }
     }
 }

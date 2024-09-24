@@ -78,7 +78,7 @@ namespace MiraBot.Modules
                 return;
             }
 
-            await RespondAsync($"Please describe the steps to reproduce this bug. Responses cannot be longer than {maxReproduceLength} characters long.");
+            await ReplyAsync($"Please describe the steps to reproduce this bug. Responses cannot be longer than {maxReproduceLength} characters long.");
             var reproduce = await _helpers.GetResponseFromUserAsync(maxReproduceLength, Context);
             if (reproduce.IsNullOrEmpty())
             {
@@ -87,17 +87,18 @@ namespace MiraBot.Modules
 
             var report = new Bug
             {
-                User = user,
                 Description = description,
                 HowToReproduce = reproduce,
                 Severity = severity,
                 DateTime = DateTime.Now
             };
 
-            await _helpers.SaveBugAsync(report);
+            await _helpers.SaveBugAsync(report, Context.User.Id);
+            var bug = await _helpers.GetNewestBugAsync();
             await ReplyAsync("This bug report has been sent to the developer. Thank you!");
             var dm = await Context.Client.GetUserAsync(_options.Value.DevId);
-            await dm.SendMessageAsync($"New bug report from {user.UserName}!");
+            await dm.SendMessageAsync($"New **{severity} severity** bug report from **{user.UserName}**!\n**Bug description:**\n\n\"{description}\"\n\n**Steps to reproduce:**\n\n\"{reproduce}\".");
+            await dm.SendMessageAsync($"This bug has been saved with **bug ID {bug.Id}**.");
         }
     }
 }
