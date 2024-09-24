@@ -1,19 +1,22 @@
 ﻿using Discord.Commands;
+using MiraBot.Common;
 using MiraBot.DataAccess;
 using MiraBot.Permissions;
 
 namespace MiraBot.Modules
 {
-    public class PermissionsModule : ModuleBase<SocketCommandContext>
+    [RequireCustomPermission(1)]
+    public class AdminModule : ModuleBase<SocketCommandContext>
     {
         private readonly PermissionsHandler _handler;
+        private readonly ModuleHelpers _helper;
 
-        public PermissionsModule(PermissionsHandler handler)
+        public AdminModule(PermissionsHandler handler, ModuleHelpers helper)
         {
             _handler = handler;
+            _helper = helper;
         }
 
-        [RequireCustomPermission(1)]
         [Command("addpermission")]
         public async Task AddPermissionAsync(ulong discordId, int permissionId)
         {
@@ -33,14 +36,12 @@ namespace MiraBot.Modules
             await Context.Channel.SendMessageAsync($"User **{recipient.UserName}** has been given permission **{permission.Name}**.");
         }
 
-        [RequireCustomPermission(1)]
         [Command("removepermission")]
         public async Task RemovePermissionAsync(ulong discordId, int permissionId)
         {
 
         }
 
-        [RequireCustomPermission(1)]
         [Command("ban")]
         public async Task BanUserAsync(ulong discordId)
         {
@@ -48,7 +49,6 @@ namespace MiraBot.Modules
             await Context.Channel.SendMessageAsync($"This user has been banned.");
         }
 
-        [RequireCustomPermission(1)]
         [Command("unban")]
         public async Task UnbanUserAsync(ulong discordId)
         {
@@ -56,7 +56,6 @@ namespace MiraBot.Modules
             await Context.Channel.SendMessageAsync($"This user has been unbanned.");
         }
 
-        [RequireCustomPermission(1)]
         [Command("newpermission")]
         public async Task AddNewPermissionAsync(string permissionName, string description)
         {
@@ -65,21 +64,18 @@ namespace MiraBot.Modules
             await Context.Channel.SendMessageAsync($"Added permission \"**{permissionName}**\" with permissionId **{permission.PermissionId}**.");
         }
 
-        [RequireCustomPermission(1)]
         [Command("deletepermission")]
         public async Task DeleteExistingPermissionAsync()
         {
 
         }
 
-        [RequireCustomPermission(1)]
         [Command("editpermission")]
         public async Task EditPermissionAsync()
         {
 
         }
 
-        [RequireCustomPermission(1)]
         [Command("listallpermissions")]
         public async Task ListAllPermissionsAsync()
         {
@@ -104,6 +100,20 @@ namespace MiraBot.Modules
             }
 
             await Context.Channel.SendMessageAsync(_handler.ListPermissionsAsync(recipient));
+        }
+
+        [Command("bugs")]
+        public async Task ListBugsAsync()
+        {
+            var bugs = await _helper.GetAllBugsAsync();
+            // write bug info to file and send it
+        }
+
+        [Command("bugfixed")]
+        public async Task FixBugAsync(int bugId)
+        {
+            await _helper.MarkBugAsFixedAsync(bugId);
+            await Context.Channel.SendMessageAsync($"Bug with bug ID {bugId} has been marked as resolved.");
         }
     }
 }

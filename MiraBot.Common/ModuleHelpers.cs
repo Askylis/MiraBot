@@ -46,31 +46,6 @@ namespace MiraBot.Common
             return userChoice;
         }
 
-        public async Task<int> GetValidNumberAsync(int minNumber, int maxNumber, SocketCommandContext context)
-        {
-            int userChoice = 0;
-            bool isValid = false;
-
-            while (!isValid)
-            {
-                var input = await _interactive.NextMessageAsync(x => x.Author.Id == context.User.Id && x.Channel.Id == context.Channel.Id,
-            timeout: TimeSpan.FromMinutes(2));
-
-                if (!input.IsSuccess)
-                {
-                    return 0;
-                }
-                isValid = int.TryParse(input.Value.Content, out userChoice);
-                isValid = isValid && userChoice <= maxNumber && userChoice >= 0;
-                if (!isValid)
-                {
-                    await ReplyAsync($"That doesn't seem to work. Please enter a number between {minNumber} and {maxNumber}.");
-                }
-            }
-
-            return userChoice;
-        }
-
         public async Task SaveUserTimezoneAsync(User owner)
         {
             await SendTimezoneFileAsync();
@@ -250,15 +225,6 @@ namespace MiraBot.Common
             }
 
             await FollowupWithFileAsync(fileName);
-        }
-
-        public async Task<bool> IsValidNumberAsync(int number, int maxNumber,  ulong discordId, bool allowZero)
-        {
-            if ((!allowZero && number <= 0) || (allowZero && number < 0))
-            {
-                return false;
-            }
-            return number <= maxNumber;
         }
 
         public async Task AddTimezoneToUserAsync(ulong discordId, string timezoneId)
