@@ -63,15 +63,6 @@ namespace MiraBot.GroceryAssistance
             return randomizedMeals.ToList();
         }
 
-        public async Task<bool> IsValidNumberAsync(int number, ulong discordId, bool allowZero)
-        {
-            if ((!allowZero && number <= 0) || (allowZero && number < 0))
-            {
-                return false;
-            }
-            return number <= await _groceryAssistantRepository.CountMealsByUserAsync(discordId);
-        }
-
         public async Task<List<Meal>> ConvertMealsFileAsync(string[] mealsFile, ulong discordId)
         {
             var meals = new List<Meal>();

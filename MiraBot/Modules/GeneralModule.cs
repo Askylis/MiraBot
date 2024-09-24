@@ -2,6 +2,7 @@
 using Discord.Commands;
 using Discord.Interactions;
 using Microsoft.Extensions.Options;
+using MiraBot.Common;
 using MiraBot.Options;
 using MiraBot.Permissions;
 
@@ -13,11 +14,13 @@ namespace MiraBot.Modules
         private readonly CommandService _commandService;
         private readonly InteractionService _interactionService;
         private readonly IOptions<MiraOptions> _options;
-        public GeneralModule(InteractionService interactionService, IOptions<MiraOptions> options, CommandService service)
+        private readonly ModuleHelpers _helpers;
+        public GeneralModule(InteractionService interactionService, IOptions<MiraOptions> options, CommandService service, ModuleHelpers helpers)
         {
             _interactionService = interactionService;
             _options = options;
             _commandService = service;
+            _helpers = helpers;
         }
 
         [SlashCommand("help", "Displays all available Mira functionality and provides information on how to use it all.")]
@@ -47,7 +50,14 @@ namespace MiraBot.Modules
         [SlashCommand("register", "Register yourself with Mira to access her functions.")]
         public async Task RegisterAsync()
         {
-            // need to update users cache after adding new user 
+            if (await _helpers.UserExistsAsync(Context.User.Id))
+            {
+                await RespondAsync("You've already registered with me, so you can't use this command again.");
+                return;
+            }
+
+            // get timezone
+            // get date format (mm/dd vs dd/mm)
         }
     }
 }

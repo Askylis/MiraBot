@@ -47,7 +47,7 @@ namespace MiraBot.Modules
             var owner = await _helpers.GetUserByNameAsync(Context.User.Username);
             if (owner.Timezone is null)
             {
-                await SaveUserTimezoneAsync(owner);
+                await _helpers.SaveUserTimezoneAsync(owner);
             }
             var handler = _serviceProvider.GetRequiredService<ReminderHandler>();
             await ReplyAsync(await handler.ParseReminderAsync(input, Context.User.Id));
@@ -75,12 +75,13 @@ namespace MiraBot.Modules
 
             while (index != -1)
             {
-                index = await GetIndexOfUserChoiceAsync(
+                index = await _helpers.GetIndexOfUserChoiceAsync(
                                 reminders,
                                 "Select which reminder you'd like to cancel",
                                 "Cancel this reminder",
                                 Context,
-                                "select-menu");
+                                "select-menu",
+                                reminder => reminder.Message);
 
                 if (index == -1)
                 {
@@ -106,7 +107,7 @@ namespace MiraBot.Modules
                 await ReplyAsync("You don't have any active reminders.");
                 return;
             }
-            await SendLongMessageAsync(reminders);
+            await _helpers.SendLongMessageAsync(reminders.Select(r => r.Message).ToList());
         }
 
 
@@ -140,149 +141,7 @@ namespace MiraBot.Modules
                 return;
             }
             await ReplyAsync($"I found {matchingReminders.Count} reminders!");
-            await SendLongMessageAsync(matchingReminders);
-        }
-
-
-        public async Task SaveUserTimezoneAsync(User owner)
-        {
-            await SendTimezoneFileAsync();
-
-            while (true)
-            {
-                await ReplyAsync("Copy your timezone exactly how it's listed in this file, and send it to me so I can register your timezone!");
-
-                var input = await _interactive.NextMessageAsync(
-                    x => x.Author.Id == Context.User.Id && x.Channel.Id == Context.Channel.Id,
-                    timeout: TimeSpan.FromMinutes(2));
-
-                if (!input.IsSuccess)
-                {
-                    continue;
-                }
-
-                var timezone = input.Value.Content.Trim();
-
-                if (!MiraminderService.IsValidTimezone(timezone))
-                {
-                    await ReplyAsync("The timezone you entered isn't valid! Make sure to copy your timezone exactly as it's listed in the file I sent.");
-                    continue;
-                }
-
-                if (owner.UsesAmericanDateFormat is null)
-                {
-                    await ReplyAsync("How would you write out the date \"August 30th\"?");
-                    var options = new List<string> { "8/30", "30/8" };
-                    await GenerateSelectMenuAsync(options,
-                        "How would you write out the date \"August 30th\"?",
-                        "select-menu",
-                        "Select this option",
-                        Context
-                        );
-                    var selection = result;
-                    result = -1;
-                    bool isAmerican = (selection == 0);
-
-                    await _reminderService.AddDateFormatToUserAsync(owner.DiscordId, isAmerican);
-                }
-
-                await _reminderService.AddTimezoneToUserAsync(Context.User.Id, timezone);
-                break;
-            }
-        }
-
-
-        public async Task SendTimezoneFileAsync()
-        {
-            string fileName;
-            try
-            {
-                fileName = MiraminderService.CreateTimezoneFile();
-            }
-            catch (Exception ex)
-            {
-                // TODO: Log exception
-                await ReplyAsync("I was unable to create the timezone file. Please seek assistance from the developer.");
-                return;
-            }
-
-            await FollowupWithFileAsync(fileName);
-        }
-
-        public async Task<int> GetIndexOfUserChoiceAsync(List<Reminder> messages,
-            string placeholder,
-            string? description,
-            SocketInteractionContext ctx,
-            string customId
-            )
-        {
-            int selection;
-            if (messages.Count <= selectMenuLimit)
-            {
-                await GenerateSelectMenuAsync(messages.Select(m => m.Message).ToList(),
-                    placeholder,
-                    customId,
-                    description,
-                    ctx);
-                selection = result;
-                result = 0;
-            }
-
-            else
-            {
-                await SendLongMessageAsync(messages);
-                selection = await _helpers.GetValidNumberAsync(0, messages.Count, Context);
-                selection--;
-            }
-
-            return selection;
-        }
-
-
-        public async Task SendLongMessageAsync(List<Reminder> reminders)
-        {
-            var messages = await _reminderService.SendLongMessage(reminders);
-
-            foreach (var message in messages)
-            {
-                await ReplyAsync(message);
-            }
-        }
-
-        public async Task GenerateSelectMenuAsync(
-            List<string> inputs,
-            string placeholder,
-            string customId,
-            string? optionDescription,
-            SocketInteractionContext context,
-            string defaultOption = "Nevermind",
-            string defaultOptionDescription = "Abandon this action")
-        {
-            var optionId = 0;
-            var menuBuilder = new SelectMenuBuilder()
-                .WithPlaceholder(placeholder)
-                .WithCustomId(customId)
-                .AddOption(defaultOption, "nevermind", defaultOptionDescription);
-
-            foreach (var input in inputs)
-            {
-                menuBuilder.AddOption(input, $"option-{optionId}", optionDescription);
-                optionId++;
-            }
-
-            var builder = new ComponentBuilder()
-                .WithSelectMenu(menuBuilder);
-
-            var msg = await context.Channel.SendMessageAsync(components: builder.Build());
-
-            var menuResult = await _interactive.NextInteractionAsync(x => x.User.Username == context.User.Username, timeout: TimeSpan.FromSeconds(120));
-
-            if (menuResult.IsSuccess)
-            {
-                await menuResult.Value!.DeferAsync();
-            }
-
-            await msg.DeleteAsync();
+            await _helpers.SendLongMessageAsync(reminders.Select(r => r.Message).ToList());
         }
     }
 }

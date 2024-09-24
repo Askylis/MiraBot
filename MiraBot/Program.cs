@@ -49,7 +49,6 @@ builder.Services.AddScoped<PermissionsRepository>();
 builder.Services.AddScoped<UsersRepository>();
 builder.Services.AddSingleton<IRemindersCache, RemindersCache>();
 builder.Services.AddSingleton<UsersCache>();
-builder.Services.AddTransient<GroceryAssistantComponents>();
 builder.Services.AddTransient<GroceryAssistant>();
 builder.Services.AddTransient<PermissionsHandler>();
 builder.Services.AddTransient<MiraminderService>();

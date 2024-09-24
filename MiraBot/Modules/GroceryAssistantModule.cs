@@ -14,7 +14,6 @@ namespace MiraBot.Modules
     {
         private readonly GroceryAssistant _groceryAssistant;
         private readonly InteractiveService _interactiveService;
-        private readonly GroceryAssistantComponents _components;
         private readonly ModuleHelpers _helpers;
         private readonly UserCommunications _comms;
         internal static int modifyValue = 0;
@@ -24,12 +23,11 @@ namespace MiraBot.Modules
         internal const int selectMenuLimit = 24;
         internal const int maxIngredientLength = 1500;
         internal const int maxRecipeLength = 65535;
-        public GroceryAssistantModule(GroceryAssistant groceryAssistant, InteractiveService interactiveService,
-            GroceryAssistantComponents components, ModuleHelpers moduleHelpers, UserCommunications comms)
+        public GroceryAssistantModule(GroceryAssistant groceryAssistant, InteractiveService interactiveService, 
+            ModuleHelpers moduleHelpers, UserCommunications comms)
         {
             _groceryAssistant = groceryAssistant;
             _interactiveService = interactiveService;
-            _components = components;
             _helpers = moduleHelpers;
             _comms = comms;
         }
@@ -83,11 +81,14 @@ namespace MiraBot.Modules
             }
             while (index != -1)
             {
-                index = await GetMealIndexAsync(meals,
+                index = await _helpers.GetIndexOfUserChoiceAsync(
+                meals,
                 "Choose which meal you'd like to delete.",
-                "delete-menu",
                 "Remove this meal from your saved meals.",
-          Context);
+                Context,
+                "delete-menu",
+                meals => meals.Name
+                );
                 if (index == -1)
                 {
                     break;
@@ -118,11 +119,14 @@ namespace MiraBot.Modules
                 return;
             }
 
-            index = await GetMealIndexAsync(meals,
+            index = await _helpers.GetIndexOfUserChoiceAsync(
+            meals,
             "Choose which meal you'd like to edit.",
-            "edit-menu",
             "Modify this meal",
-      Context);
+            Context,
+            "edit-menu",
+            meal => meal.Name
+            );
 
             if (index == -1)
             {
@@ -137,11 +141,13 @@ namespace MiraBot.Modules
                         "Modify the recipe."
                     };
             await ReplyAsync("Do you want to edit the name, ingredients, both, or modify its recipe?");
-            await _components.GenerateMenuAsync(options,
+            await _helpers.GetIndexOfUserChoiceAsync(
+                options,
                 "Choose what to edit.",
-                "edit-menu",
                 null,
-                Context
+                Context,
+                "edit-menu",
+                option => option
                 );
             selection = modifyValue;
             modifyValue = 0;
@@ -257,11 +263,14 @@ namespace MiraBot.Modules
 
             while (numberOfMeals < mealCount && index > -1)
             {
-                index = await GetMealIndexAsync(selectedMeals,
+                index = await _helpers.GetIndexOfUserChoiceAsync(
+                    selectedMeals,
                     "Choose override preference",
-                    "override-menu",
                     "Remove this meal from your selected meals.",
-                    Context);
+                    Context,
+                    "override-menu",
+                    meal => meal.Name
+                    );
                 if (index >= 0)
                 {
                     string removedMeal = selectedMeals[index].Name;
@@ -363,11 +372,14 @@ namespace MiraBot.Modules
                     return;
                 }
                 await ReplyAsync("First, select which meal you'd like to add a recipe to.");
-                int index = await GetMealIndexAsync(meals,
+                int index = await _helpers.GetIndexOfUserChoiceAsync(
+                meals,
                 "Choose which meal you'd like to add a recipe to.",
-                "recipe-menu",
                 "Add a recipe to this meal.",
-                Context);
+                Context,
+                "recipe-menu",
+                meal => meal.Name
+                );
 
                 if (index == -1)
                 {
@@ -414,11 +426,14 @@ namespace MiraBot.Modules
             }
 
             await FollowupAsync("Which meal's recipe do you want to see?");
-            int index = await GetMealIndexAsync(meals,
+            int index = await _helpers.GetIndexOfUserChoiceAsync(
+            meals,
             "Choose which recipe you'd like to view.",
-            "recipe-menu",
             "Add a recipe to this meal.",
-            Context);
+            Context,
+            "recipe-menu",
+            meal => meal.Name
+            );
 
             if (index == -1)
             {
@@ -455,11 +470,14 @@ namespace MiraBot.Modules
                 return;
             }
             await RespondAsync("Which meal would you like to share?");
-            int index = await GetMealIndexAsync(mealsWithRecipes,
+            int index = await _helpers.GetIndexOfUserChoiceAsync(
+            mealsWithRecipes,
             "Choose which recipe you'd like to share.",
-            "share-menu",
             "Share this meal.",
-            Context);
+            Context,
+            "share-menu",
+            meal => meal.Name
+            );
 
             if (index == -1)
             {
@@ -515,33 +533,6 @@ namespace MiraBot.Modules
             {
                 await ReplyAsync(message);
             }
-        }
-
-
-        public async Task<int> GetMealIndexAsync(List<Meal> meals, string placeholder, string customId, string? description, SocketInteractionContext ctx)
-        {
-            int selection;
-            if (meals.Count <= selectMenuLimit)
-            {
-                var names = meals.Select(m => m.Name).ToList();
-
-                await _components.GenerateMenuAsync(names,
-                    placeholder,
-                    customId,
-                    description,
-                    ctx);
-                selection = modifyValue;
-                modifyValue = 0;
-            }
-
-            else
-            {
-                await SendLongMessageAsync(meals: meals);
-                selection = await _helpers.GetValidNumberAsync(0, meals.Count, Context);
-                selection--;
-            }
-
-            return selection;
         }
 
         public async Task<string> GetRecipeAsync()
