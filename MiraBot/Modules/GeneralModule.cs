@@ -62,13 +62,16 @@ namespace MiraBot.Modules
 
             // get timezone
             // get date format (mm/dd vs dd/mm)
+            // direct user to use /help 
         }
 
         [SlashCommand("bugreport", "Report a bug to Mira's developer.")]
         public async Task ReportBugAsync(
-            [Choice("Low: typos, poor performance, etc", "low"), Choice("Medium: incorrect values or responses", "medium"), Choice("High: this bug completely broke Mira", "high")]
+            [Choice("Low: typos, poor performance, etc", "low"), Choice("Medium: incorrect values/responses, or data not saving correctly", "medium"), Choice("High: Mira completely stops functioning", "high")]
             [Discord.Interactions.Summary("severity", "Select how severe this bug is.")] string severity)
         {
+            // log bugs elsewhere? like in console. or in bot channel in discord server?
+            // also need to add a permission that blacklists people from submitting bug reports, but doesn't outright ban them from Mira?
             var user = await _helpers.GetUserByDiscordIdAsync(Context.User.Id);
 
             await RespondAsync($"Please describe the bug. Do not put steps to reproduce here. Responses cannot be longer than {maxDescriptionLength} characters long.");
