@@ -5,6 +5,8 @@ using Microsoft.Extensions.Options;
 using MiraBot.Common;
 using MiraBot.Options;
 using MiraBot.Permissions;
+using MiraBot.DataAccess;
+using Microsoft.IdentityModel.Tokens;
 
 namespace MiraBot.Modules
 {
@@ -15,6 +17,8 @@ namespace MiraBot.Modules
         private readonly InteractionService _interactionService;
         private readonly IOptions<MiraOptions> _options;
         private readonly ModuleHelpers _helpers;
+        private const int maxDescriptionLength = 250;
+        private const int maxReproduceLength = 500;
         public GeneralModule(InteractionService interactionService, IOptions<MiraOptions> options, CommandService service, ModuleHelpers helpers)
         {
             _interactionService = interactionService;
@@ -58,6 +62,42 @@ namespace MiraBot.Modules
 
             // get timezone
             // get date format (mm/dd vs dd/mm)
+        }
+
+        [SlashCommand("bugreport", "Report a bug to Mira's developer.")]
+        public async Task ReportBugAsync(
+            [Choice("Low: typos, poor performance, etc", "low"), Choice("Medium: incorrect values or responses", "medium"), Choice("High: this bug completely broke Mira", "high")]
+            [Discord.Interactions.Summary("severity", "Select how severe this bug is.")] string severity)
+        {
+            var user = await _helpers.GetUserByDiscordIdAsync(Context.User.Id);
+
+            await RespondAsync($"Please describe the bug. Do not put steps to reproduce here. Responses cannot be longer than {maxDescriptionLength} characters long.");
+            var description = await _helpers.GetResponseFromUserAsync(maxDescriptionLength, Context);
+            if (description.IsNullOrEmpty())
+            {
+                return;
+            }
+
+            await RespondAsync($"Please describe the steps to reproduce this bug. Responses cannot be longer than {maxReproduceLength} characters long.");
+            var reproduce = await _helpers.GetResponseFromUserAsync(maxReproduceLength, Context);
+            if (reproduce.IsNullOrEmpty())
+            {
+                return;
+            }
+
+            var report = new Bug
+            {
+                User = user,
+                Description = description,
+                HowToReproduce = reproduce,
+                Severity = severity,
+                DateTime = DateTime.Now
+            };
+
+            await _helpers.SaveBugAsync(report);
+            await ReplyAsync("This bug report has been sent to the developer. Thank you!");
+            var dm = await Context.Client.GetUserAsync(_options.Value.DevId);
+            await dm.SendMessageAsync($"New bug report from {user.UserName}!");
         }
     }
 }

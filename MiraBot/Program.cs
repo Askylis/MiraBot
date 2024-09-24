@@ -47,6 +47,7 @@ builder.Services.AddScoped<IGroceryAssistantRepository, GroceryAssistantReposito
 builder.Services.AddScoped<IMiramindersRepository, MiramindersRepository>();
 builder.Services.AddScoped<PermissionsRepository>();
 builder.Services.AddScoped<UsersRepository>();
+builder.Services.AddScoped<BugRepository>();
 builder.Services.AddSingleton<IRemindersCache, RemindersCache>();
 builder.Services.AddSingleton<UsersCache>();
 builder.Services.AddTransient<GroceryAssistant>();

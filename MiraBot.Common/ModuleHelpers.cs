@@ -11,12 +11,14 @@ namespace MiraBot.Common
     {
         private readonly InteractiveService _interactive;
         private readonly UsersRepository _usersRepository;
+        private readonly BugRepository _bugRepository;
         public static int result = -1;
         internal const int selectMenuLimit = 24;
-        public ModuleHelpers(InteractiveService interactiveService, UsersRepository usersRepository)
+        public ModuleHelpers(InteractiveService interactiveService, UsersRepository usersRepository, BugRepository bugRepository)
         {
             _interactive = interactiveService;
             _usersRepository = usersRepository;
+            _bugRepository = bugRepository;
         }
 
         public async Task<int> GetValidNumberAsync(int minNumber, int maxNumber, SocketInteractionContext context)
@@ -192,6 +194,39 @@ namespace MiraBot.Common
             await msg.DeleteAsync();
         }
 
+        public async Task GenerateModalAsync()
+        {
+
+        }
+
+        public async Task<string?> GetResponseFromUserAsync(int maxLength, SocketInteractionContext context)
+        {
+            bool isValid = false;
+            string input = string.Empty;
+            do
+            {
+                var reponse = await _interactive.NextMessageAsync(x => x.Author.Id == context.User.Id && x.Channel.Id == context.Channel.Id,
+            timeout: TimeSpan.FromMinutes(2));
+
+                if (!reponse.IsSuccess)
+                {
+                    return null;
+                }
+
+                input = reponse.Value.Content.Trim();
+
+                if (input.Length > maxLength)
+                {
+                    await ReplyAsync($"This message is too long. It's {input.Length} characters long, but can't be longer than {maxLength} characters. Try again, please.");
+                    continue;
+                }
+                isValid = true;
+            }
+            while (!isValid);
+
+            return input;
+        }
+
         public async Task SendLongMessageAsync(List<string> messages)
         {
             foreach (var message in messages)
@@ -274,6 +309,11 @@ namespace MiraBot.Common
         {
             return await _usersRepository.GetUserByUserIdAsync(userId)
                 .ConfigureAwait(false);
+        }
+
+        public async Task SaveBugAsync(Bug bug)
+        {
+            await _bugRepository.SaveBugAsync(bug);
         }
     }
 }
