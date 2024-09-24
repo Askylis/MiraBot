@@ -47,29 +47,6 @@ namespace MiraBot.GroceryAssistance
             return await _groceryAssistantRepository.GetAllMealsAsync(discordId);
         }
 
-        public async Task CheckForNewUserAsync(string userName, ulong discordId)
-        {
-            if (!await _usersRepository.UserExistsAsync(discordId))
-            {
-                _logger.LogTrace("This user does not exist! Adding user now.");
-                var user = new User
-                {
-                    DiscordId = discordId,
-                    UserName = userName
-                };
-                await _usersRepository.AddNewUserAsync(user);
-            }
-        }
-
-        public async Task<User?> GetUserByNameAsync(string username)
-        {
-            return await _usersRepository.GetUserByNameAsync(username);
-        }
-
-        public async Task<User> GetUserByDiscordIdAsync(ulong discordId)
-        {
-            return await _usersRepository.GetUserByDiscordIdAsync(discordId);
-        }
 
         public IEnumerable<string> TrimIngredients(string ingredientsInput)
         {

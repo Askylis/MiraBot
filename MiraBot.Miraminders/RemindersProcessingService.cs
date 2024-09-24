@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Hosting;
 using MiraBot.Communication;
 using MiraBot.DataAccess;
+using MiraBot.Common;
 
 namespace MiraBot.Miraminders
 {
@@ -9,15 +10,17 @@ namespace MiraBot.Miraminders
         private readonly IRemindersCache _cache;
         private readonly MiraminderService _reminderService;
         private readonly UserCommunications _comms;
-
+        private readonly ModuleHelpers _helpers;
         public RemindersProcessingService(
             IRemindersCache cache,
             MiraminderService reminder,
-            UserCommunications comms)
+            UserCommunications comms,
+            ModuleHelpers helpers)
         {
             _cache = cache;
             _reminderService = reminder;
             _comms = comms;
+            _helpers = helpers;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -58,8 +61,8 @@ namespace MiraBot.Miraminders
 
         private async Task SendReminderAsync(Reminder reminder)
         {
-            var recipient = await _reminderService.GetUserAsync(reminder.RecipientId);
-            var owner = await _reminderService.GetUserAsync(reminder.OwnerId);
+            var recipient = await _helpers.GetUserByUserIdAsync(reminder.RecipientId);
+            var owner = await _helpers.GetUserByUserIdAsync(reminder.OwnerId);
 
             if (reminder.OwnerId == reminder.RecipientId)
             {

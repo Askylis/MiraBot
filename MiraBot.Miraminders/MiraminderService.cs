@@ -33,37 +33,6 @@ namespace MiraBot.Miraminders
             return user?.Timezone;
         }
 
-        public async Task<User?> GetUserAsync(int userId)
-        {
-            return await _usersRepository.GetUserByUserIdAsync(userId)
-                .ConfigureAwait(false);
-        }
-
-        public async Task<User> EnsureUserExistsAsync(ulong discordId, string username)
-        {
-            var user = await _usersRepository.GetUserByDiscordIdAsync(discordId);
-            if (user is not null)
-            {
-                return user;
-            }
-
-            var newUser = new User { DiscordId = discordId, UserName = username };
-            await _usersRepository.AddNewUserAsync(newUser);
-            await _usersCache.RefreshCacheAsync();
-            return newUser;
-        }
-
-        public async Task<User?> GetUserByNameAsync(string userName)
-        {
-            return await _usersRepository.GetUserByNameAsync(userName)
-                .ConfigureAwait(false);
-        }
-
-        public async Task<User?> GetUserByDiscordIdAsync(ulong discordId)
-        {
-            return await _usersRepository.GetUserByDiscordIdAsync(discordId);
-        }
-
         public static bool IsValidTimezone(string timezoneId)
         {
             return TimeZoneInfo
@@ -97,10 +66,6 @@ namespace MiraBot.Miraminders
             await _remindersRepository.RemoveReminderAsync(reminder.ReminderId);
         }
 
-        public async Task FindReminderAsync(Reminder reminder)
-        {
-            
-        }
 
         public DateTime ConvertUserTimeToUtc(TimeOnly requestedTime, string userTimezoneId)
         {

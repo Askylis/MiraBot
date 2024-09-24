@@ -1,15 +1,19 @@
 ﻿using Discord.Commands;
 using Discord.Interactions;
 using Fergun.Interactive;
+using MiraBot.DataAccess;
+using MiraBot.DataAccess.Repositories;
 
-namespace MiraBot.Modules
+namespace MiraBot.Common
 {
     public class ModuleHelpers : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly InteractiveService _interactiveService;
-        public ModuleHelpers(InteractiveService interactiveService)
+        private readonly UsersRepository _usersRepository;
+        public ModuleHelpers(InteractiveService interactiveService, UsersRepository usersRepository)
         {
             _interactiveService = interactiveService;
+            _usersRepository = usersRepository;
         }
 
         public async Task<int> GetValidNumberAsync(int minNumber, int maxNumber, SocketInteractionContext context)
@@ -60,6 +64,27 @@ namespace MiraBot.Modules
             }
 
             return userChoice;
+        }
+
+        public async Task<bool> UserExistsAsync(ulong discordId)
+        {
+            return await _usersRepository.UserExistsAsync(discordId);
+        }
+
+        public async Task<User?> GetUserByNameAsync(string username)
+        {
+            return await _usersRepository.GetUserByNameAsync(username);
+        }
+
+        public async Task<User> GetUserByDiscordIdAsync(ulong discordId)
+        {
+            return await _usersRepository.GetUserByDiscordIdAsync(discordId);
+        }
+
+        public async Task<User?> GetUserByUserIdAsync(int userId)
+        {
+            return await _usersRepository.GetUserByUserIdAsync(userId)
+                .ConfigureAwait(false);
         }
     }
 }

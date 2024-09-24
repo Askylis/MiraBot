@@ -2,6 +2,7 @@
 using Discord.Interactions;
 using Fergun.Interactive;
 using Microsoft.Extensions.DependencyInjection;
+using MiraBot.Common;
 using MiraBot.DataAccess;
 using MiraBot.Miraminders;
 using MiraBot.Permissions;
@@ -38,8 +39,12 @@ namespace MiraBot.Modules
         public async Task GetNewReminderAsync(string input)
         {
             await RespondAsync("Gimme a sec to look at this...");
-            await _reminderService.EnsureUserExistsAsync(Context.User.Id, Context.User.Username);
-            var owner = await _reminderService.GetUserByNameAsync(Context.User.Username);
+            if (!await _helpers.UserExistsAsync(Context.User.Id))
+            {
+                await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
+                return;
+            }
+            var owner = await _helpers.GetUserByNameAsync(Context.User.Username);
             if (owner.Timezone is null)
             {
                 await SaveUserTimezoneAsync(owner);
@@ -52,9 +57,13 @@ namespace MiraBot.Modules
         [SlashCommand("remindcancel", "Cancel a reminder that either you own, or that someone sent to you.")]
         public async Task CancelReminderAsync()
         {
-            await _reminderService.EnsureUserExistsAsync(Context.User.Id, Context.User.Username);
+            if (!await _helpers.UserExistsAsync(Context.User.Id))
+            {
+                await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
+                return;
+            }
             int index = 0;
-            var user = await _reminderService.GetUserByDiscordIdAsync(Context.User.Id);
+            var user = await _helpers.GetUserByDiscordIdAsync(Context.User.Id);
             var reminders = _cache.GetCacheContentsByUser(user.UserId);
             if (reminders.Count == 0)
             {
@@ -90,7 +99,7 @@ namespace MiraBot.Modules
         public async Task ListRemindersAsync()
         {
             await RespondAsync("Gimme just a sec!");
-            var user = await _reminderService.GetUserByDiscordIdAsync(Context.User.Id);
+            var user = await _helpers.GetUserByDiscordIdAsync(Context.User.Id);
             var reminders = _cache.GetCacheContentsByUser(user.UserId);
             if (reminders.Count == 0)
             {
@@ -105,8 +114,12 @@ namespace MiraBot.Modules
         public async Task FindReminderAsync(string word)
         {
             await RespondAsync("Lemme look this up...");
-            await _reminderService.EnsureUserExistsAsync(Context.User.Id, Context.User.Username);
-            var user = await _reminderService.GetUserByDiscordIdAsync(Context.User.Id);
+            if (!await _helpers.UserExistsAsync(Context.User.Id))
+            {
+                await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
+                return;
+            }
+            var user = await _helpers.GetUserByDiscordIdAsync(Context.User.Id);
             var reminders = _cache.GetCacheContentsByUser(user.UserId);
             List<Reminder> matchingReminders = [];
             if (reminders.Count == 0)

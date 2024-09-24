@@ -23,6 +23,7 @@ namespace MiraBot.Modules
         [SlashCommand("help", "Displays all available Mira functionality and provides information on how to use it all.")]
         public async Task HelpAsync()
         {
+            // maybe update this later to provide more in-depth information about specific commands?
             var builder = new EmbedBuilder()
                 .WithTitle("Available Commands")
                 .WithColor(Color.Blue);
@@ -41,6 +42,12 @@ namespace MiraBot.Modules
             }
 
             await RespondAsync(embed: builder.Build());
+        }
+
+        [SlashCommand("register", "Register yourself with Mira to access her functions.")]
+        public async Task RegisterAsync()
+        {
+            // need to update users cache after adding new user 
         }
     }
 }
