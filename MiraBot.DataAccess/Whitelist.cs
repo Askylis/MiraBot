@@ -7,11 +7,11 @@ public partial class Whitelist
 {
     public int WhitelistId { get; set; }
 
-    public int SenderId { get; set; }
+    public int SenderUserId { get; set; }
 
-    public int? RecipientId { get; set; }
+    public int RecipientUserId { get; set; }
 
-    public virtual User? Recipient { get; set; }
+    public virtual User RecipientUser { get; set; } = null!;
 
-    public virtual User Sender { get; set; } = null!;
+    public virtual User SenderUser { get; set; } = null!;
 }

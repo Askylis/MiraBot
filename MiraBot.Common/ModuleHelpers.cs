@@ -315,5 +315,15 @@ namespace MiraBot.Common
         {
             return await _bugRepository.FindBugAsync(bugId);
         }
+
+        public async Task BlacklistUserAsync(ulong recipientDiscordId, int senderId)
+        {
+            await _usersRepository.BlacklistUserAsync(recipientDiscordId, senderId);
+        }
+
+        public async Task WhitelistUserAsync(ulong recipientDiscordId, int senderId)
+        {
+            await _usersRepository.WhitelistUserAsync(recipientDiscordId, senderId);
+        }
     }
 }

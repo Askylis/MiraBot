@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using MiraBot.DataAccess.Exceptions;
 
 namespace MiraBot.DataAccess.Repositories
 {
@@ -115,6 +116,68 @@ namespace MiraBot.DataAccess.Repositories
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
                 return await context.Users.AnyAsync(u => u.DiscordId == discordId);
+            }
+        }
+
+        public async Task BlacklistUserAsync(ulong recipientDiscordId, int senderId)
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                var sender = context.Users.Find(senderId);
+                var recipient = await context.Users.FirstOrDefaultAsync(r => r.DiscordId == recipientDiscordId);
+                var existingBlacklist = await context.Blacklists.FirstOrDefaultAsync(b => b.SenderUserId == sender.UserId && b.RecipientUserId == recipient.UserId);
+                if (existingBlacklist != null)
+                {
+                    throw new BlacklistAlreadyExistsException();
+                }
+                var blacklist = new Blacklist
+                {
+                    RecipientUserId = recipient.UserId,
+                    SenderUserId = sender.UserId
+                };
+
+                context.Blacklists.Add(blacklist);
+                await context.SaveChangesAsync()
+                    .ConfigureAwait(false);
+            }
+        }
+
+        public async Task WhitelistUserAsync(ulong recipientDiscordId, int senderId)
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+                var sender = context.Users.Find(senderId);
+                var recipient = await context.Users.FirstOrDefaultAsync(r => r.DiscordId == recipientDiscordId);
+                var existingWhitelist = await context.Whitelists.FirstOrDefaultAsync(w => w.SenderUserId == sender.UserId && w.RecipientUserId == recipient.UserId);
+                if (existingWhitelist != null)
+                {
+                    throw new WhitelistAlreadyExistsException();
+                }
+                var whitelist = new Whitelist
+                {
+                    RecipientUserId = recipient.UserId,
+                    SenderUserId = sender.UserId
+                };
+
+                context.Whitelists.Add(whitelist);
+                await context.SaveChangesAsync()
+                    .ConfigureAwait(false);
+            }
+        }
+
+        public async Task UserIsBlacklistedAsync(ulong senderDiscordId, int recipientId)
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+
+            }
+        }
+
+        public async Task UserIsWhitelistedAsync(ulong senderDiscordId, int recipientId)
+        {
+            using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
+            {
+
             }
         }
     }

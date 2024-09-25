@@ -19,11 +19,19 @@ public partial class User
 
     public bool IsBanned { get; set; }
 
+    public virtual ICollection<Blacklist> BlacklistRecipientUsers { get; set; } = new List<Blacklist>();
+
+    public virtual ICollection<Blacklist> BlacklistSenderUsers { get; set; } = new List<Blacklist>();
+
     public virtual ICollection<Bug> Bugs { get; set; } = new List<Bug>();
 
     public virtual ICollection<Ingredient> Ingredients { get; set; } = new List<Ingredient>();
 
     public virtual ICollection<Meal> Meals { get; set; } = new List<Meal>();
+
+    public virtual ICollection<Whitelist> WhitelistRecipientUsers { get; set; } = new List<Whitelist>();
+
+    public virtual ICollection<Whitelist> WhitelistSenderUsers { get; set; } = new List<Whitelist>();
 
     public virtual ICollection<Permission> Permissions { get; set; } = new List<Permission>();
 
