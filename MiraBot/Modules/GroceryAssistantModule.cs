@@ -16,7 +16,6 @@ namespace MiraBot.Modules
         private readonly InteractiveService _interactiveService;
         private readonly ModuleHelpers _helpers;
         private readonly UserCommunications _comms;
-        internal static int modifyValue = 0;
         internal const int maxNameLength = 50;
         internal const int discordMsgLimit = 2000;
         internal const int maxIngredients = 100;
@@ -49,9 +48,10 @@ namespace MiraBot.Modules
                 return;
             }
             var ingredients = await AddIngredientsAsync();
-            if (await UserWantsToAddRecipe())
+            var wantsRecipe = await UserWantsToAddRecipe("Do you want to add a recipe?", Context.User.Id);
+            if (wantsRecipe.HasValue && wantsRecipe.Value)
             {
-                await ReplyAsync("Okay, go ahead and send me the recipe for this meal! Make sure to copy/paste it. Don't send a file or image.");
+                await ReplyAsync("Okay, go ahead and send me the recipe for this meal! You can either copy/paste the contents, or send a .txt file.");
                 recipe = await GetRecipeAsync();
                 if (recipe.IsNullOrEmpty())
                 {
@@ -144,7 +144,7 @@ namespace MiraBot.Modules
                         "Modify the recipe."
                     };
             await ReplyAsync("Do you want to edit the name, ingredients, both, or modify its recipe?");
-            await _helpers.GetIndexOfUserChoiceAsync(
+            selection = await _helpers.GetIndexOfUserChoiceAsync(
                 options,
                 "Choose what to edit.",
                 null,
@@ -152,8 +152,6 @@ namespace MiraBot.Modules
                 "edit-menu",
                 option => option
                 );
-            selection = modifyValue;
-            modifyValue = 0;
             Meal selectedMeal = meals[index];
             string mealName = "";
             var ingredients = string.Join(", ", meals[index].Ingredients.Select(i => i.Name));
@@ -349,7 +347,7 @@ namespace MiraBot.Modules
             var meals = await _groceryAssistant.ConvertMealsFileAsync(mealsText, Context.User.Id);
             if (meals.Count == 0)
             {
-                await ReplyAsync("Sorry, it doesn't look like there's any valid meals in here!");
+                await ReplyAsync("Sorry, it doesn't look like there are any valid meals in here!");
             }
             else
             {
@@ -359,7 +357,7 @@ namespace MiraBot.Modules
 
 
         [SlashCommand("gaaddrecipe", "Add a recipe to an existing meal.")]
-        public async Task AddRecipeAsync(bool isEdit, int mealId = 0)
+        public async Task AddRecipeAsync()
         {
             if (!await _helpers.UserExistsAsync(Context.User.Id))
             {
@@ -368,6 +366,11 @@ namespace MiraBot.Modules
             }
             await _helpers.UpdateUsernameIfChangedAsync(Context);
 
+            await AddRecipeAsync(false);
+        }
+
+        public async Task AddRecipeAsync(bool isEdit, int mealId = 0)
+        {
             Meal meal = new();
 
             if (mealId == 0 && !isEdit)
@@ -487,50 +490,23 @@ namespace MiraBot.Modules
             "share-menu",
             meal => meal.Name
             );
-
             if (index == -1)
             {
                 return;
             }
             var share = mealsWithRecipes[index];
+            if (! await _comms.UserCanSendMessageAsync(recipient, owner, "recipe"))
+            {
+                await ReplyAsync("Sorry, I can't share this recipe with the intended recipient. They might not have you whitelisted, or they might have blacklisted you.");
+                return; 
+            }
             await _comms.SendRecipeAsync(recipient, owner, mealsWithRecipes[index]);
             await ReplyAsync($"Okay, sent that recipe to {recipient.UserName}!");
         }
 
-        public async Task<bool> UserWantsToAddRecipe()
+        public async Task<bool?> UserWantsToAddRecipe(string question, ulong recipientDiscordId)
         {
-            bool isValid = false;
-            var wantsRecipe = false;
-            await ReplyAsync("Do you want to add a recipe to this meal? Y/N");
-
-            while (!isValid)
-            {
-                var response = await _interactiveService.NextMessageAsync(
-                        x => x.Author.Id == Context.User.Id && x.Channel.Id == Context.Channel.Id,
-                        timeout: TimeSpan.FromMinutes(2));
-
-                if (!response.IsSuccess)
-                {
-                    await ReplyAsync("You did not respond in time.");
-                    break;
-                }
-
-                if (response.Value.Content.Equals("y", StringComparison.OrdinalIgnoreCase))
-                {
-                    wantsRecipe = true;
-                    isValid = true;
-                }
-                else if (response.Value.Content.Equals("n", StringComparison.OrdinalIgnoreCase))
-                {
-                    isValid = true;
-                }
-                else
-                {
-                    await ReplyAsync("You did not enter a valid response.");
-                }
-            }
-
-            return wantsRecipe;
+            return await _comms.UserWantsAsync(question, recipientDiscordId); 
         }
 
 

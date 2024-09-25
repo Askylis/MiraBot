@@ -1,5 +1,4 @@
 ﻿using Discord;
-using Discord.Commands;
 using Discord.Interactions;
 using Fergun.Interactive;
 using MiraBot.DataAccess;
@@ -45,6 +44,46 @@ namespace MiraBot.Common
 
             return userChoice;
         }
+
+        //public async Task<bool?> UserWantsAsync(string question, ulong recipientDiscordId)
+        //{
+        //    int counter = 0;
+        //    int maxAttempts = 3;
+        //    await ctx.Channel.SendMessageAsync($"{question} Y/N");
+
+        //    while (counter < maxAttempts)
+        //    {
+        //        var response = await _interactive.NextMessageAsync(
+        //                x => x.Author.Id == ctx.User.Id && x.Channel.Id == ctx.Channel.Id,
+        //                timeout: TimeSpan.FromMinutes(2));
+
+        //        if (!response.IsSuccess)
+        //        {
+        //            counter++;
+        //            await ctx.Channel.SendMessageAsync($"You did not respond in time. Please try again. You have {maxAttempts - counter} more attempts.");
+        //            continue;
+        //        }
+
+        //        if (response.Value.Content.Equals("y", StringComparison.OrdinalIgnoreCase))
+        //        {
+        //            return true;
+        //        }
+        //        else if (response.Value.Content.Equals("n", StringComparison.OrdinalIgnoreCase))
+        //        {
+        //            return false;
+        //        }
+        //        else
+        //        {
+        //            counter++;
+        //            if (counter < maxAttempts)
+        //            {
+        //                await ctx.Channel.SendMessageAsync($"You did not enter a valid response. Please try again. You have {maxAttempts - counter} more attempts.");
+        //            }
+        //        }
+        //    }
+
+        //    return null;
+        //}
 
         public async Task AddNewUserAsync(User user)
         {
@@ -224,7 +263,6 @@ namespace MiraBot.Common
             }
         }
 
-
         public async Task SendTimezoneFileAsync()
         {
             string fileName;
@@ -314,6 +352,26 @@ namespace MiraBot.Common
         public async Task<Bug> FindBugAsync(int bugId)
         {
             return await _bugRepository.FindBugAsync(bugId);
+        }
+
+        public async Task BlacklistUserAsync(ulong recipientDiscordId, int senderId)
+        {
+            await _usersRepository.BlacklistUserAsync(recipientDiscordId, senderId);
+        }
+
+        public async Task WhitelistUserAsync(ulong recipientDiscordId, int senderId)
+        {
+            await _usersRepository.WhitelistUserAsync(recipientDiscordId, senderId);
+        }
+
+        public async Task<bool> UserIsWhitelistedAsync(ulong recipientDiscordId, int senderId)
+        {
+            return await _usersRepository.UserIsWhitelistedAsync(recipientDiscordId, senderId);
+        }
+
+        public async Task<bool> UserIsBlacklistedAsync(ulong recipientDiscordId, int senderId)
+        {
+            return await _usersRepository.UserIsBlacklistedAsync(recipientDiscordId, senderId);
         }
     }
 }

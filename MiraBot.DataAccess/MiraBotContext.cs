@@ -18,6 +18,7 @@ public partial class MiraBotContext : DbContext
     {
     }
 
+    public virtual DbSet<Blacklist> Blacklists { get; set; }
 
     public virtual DbSet<Bug> Bugs { get; set; }
 
@@ -33,11 +34,28 @@ public partial class MiraBotContext : DbContext
 
     public virtual DbSet<User> Users { get; set; }
 
+    public virtual DbSet<Whitelist> Whitelists { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.UseSqlServer(_connectionString);
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Blacklist>(entity =>
+        {
+            entity.Property(e => e.BlacklistId).HasColumnName("BlacklistID");
+
+            entity.HasOne(d => d.RecipientUser).WithMany(p => p.BlacklistRecipientUsers)
+                .HasForeignKey(d => d.RecipientUserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Blacklists_Recipients");
+
+            entity.HasOne(d => d.SenderUser).WithMany(p => p.BlacklistSenderUsers)
+                .HasForeignKey(d => d.SenderUserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Blacklists_Senders");
+        });
+
         modelBuilder.Entity<Bug>(entity =>
         {
             entity.Property(e => e.Description)
@@ -163,6 +181,7 @@ public partial class MiraBotContext : DbContext
                     v => (long)v,
                     v => (ulong)v);
 
+
             entity.HasMany(d => d.Permissions).WithMany(p => p.Users)
                 .UsingEntity<Dictionary<string, object>>(
                     "UserPermission",
@@ -179,6 +198,19 @@ public partial class MiraBotContext : DbContext
                         j.HasKey("UserId", "PermissionId");
                         j.ToTable("UserPermissions");
                     });
+        });
+
+        modelBuilder.Entity<Whitelist>(entity =>
+        {
+            entity.HasOne(d => d.RecipientUser).WithMany(p => p.WhitelistRecipientUsers)
+                .HasForeignKey(d => d.RecipientUserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Whitelists_Recipients");
+
+            entity.HasOne(d => d.SenderUser).WithMany(p => p.WhitelistSenderUsers)
+                .HasForeignKey(d => d.SenderUserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Whitelists_Senders");
         });
 
         OnModelCreatingPartial(modelBuilder);

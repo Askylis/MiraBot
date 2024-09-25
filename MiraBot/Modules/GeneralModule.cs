@@ -121,5 +121,31 @@ namespace MiraBot.Modules
             await dm.SendMessageAsync($"New **{severity} severity** bug report from **{user.UserName}**!\n**Bug description:**\n\n\"{description}\"\n\n**Steps to reproduce:**\n\n\"{reproduce}\".");
             await dm.SendMessageAsync($"This bug has been saved with **bug ID {bug.Id}**.");
         }
+
+        [SlashCommand("blacklist", "Block a user from being able to interact with you through Mira.")]
+        public async Task BlacklistAsync(string username)
+        {
+            var user = await _helpers.GetUserByNameAsync(username);
+            if (user == null)
+            {
+                await RespondAsync("Could not find a user with that username. You may have mistyped the name, or the recipient has not registered with me yet.");
+                return;
+            }
+            await _helpers.BlacklistUserAsync(Context.User.Id, user.UserId);
+            await RespondAsync($"{user.UserName} has been blacklisted. They will not be able to send you anything through me anymore.");
+        }
+
+        [SlashCommand("whitelist", "Allow a user to interact with you through Mira.")]
+        public async Task WhitelistAsync(string username)
+        {
+            var user = await _helpers.GetUserByNameAsync(username);
+            if (user == null)
+            {
+                await RespondAsync("Could not find a user with that username. You may have mistyped the name, or the recipient has not registered with me yet.");
+                return;
+            }
+            await _helpers.WhitelistUserAsync(Context.User.Id, user.UserId);
+            await RespondAsync($"{user.UserName} has been whitelisted. They will now be able to send you things through me.");
+        }
     }
 }

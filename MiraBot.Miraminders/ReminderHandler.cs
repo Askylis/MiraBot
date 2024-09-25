@@ -1,5 +1,7 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Discord.Interactions;
+using Microsoft.Extensions.Options;
 using MiraBot.Common;
+using MiraBot.Communication;
 using MiraBot.DataAccess;
 using System.Globalization;
 using System.Text.RegularExpressions;
@@ -16,27 +18,32 @@ namespace MiraBot.Miraminders
         private readonly UsersCache _userCache;
         private readonly IOptions<ReminderOptions> _options;
         private readonly ModuleHelpers _helpers;
+        private readonly UserCommunications _comms;
         public ReminderHandler(
             MiraminderService service,
             RemindersCache cache,
             UsersCache usersCache,
             IOptions<ReminderOptions> options,
-            ModuleHelpers helpers)
+            ModuleHelpers helpers,
+            UserCommunications comms)
         {
             _service = service;
             _reminderCache = cache;
             _userCache = usersCache;
             _options = options;
             _helpers = helpers;
+            _comms = comms;
         }
 
-        public async Task<string> ParseReminderAsync(string input, ulong ownerId)
+        public async Task<string> ParseReminderAsync(string input, ulong ownerId, SocketInteractionContext ctx)
         {
             // convert "my" and "me" in reminder message to "your" and "you"?
             // splits the input into a list for easier management
             completeInput = input.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
 
             var owner = await _helpers.GetUserByDiscordIdAsync(ownerId);
+            var recipientId = GetRecipientIdAsync(owner.UserId);
+            var recipient = await _helpers.GetUserByUserIdAsync(recipientId);
 
             if (owner.Reminders.Count >= _options.Value.MaxReminderCount && owner.UserName != _options.Value.DevUserName)
             {
@@ -49,6 +56,11 @@ namespace MiraBot.Miraminders
                 OwnerId = owner.UserId,
                 RecipientId = GetRecipientIdAsync(owner.UserId)
             };
+
+            if (! await _comms.UserCanSendMessageAsync(recipient, owner, "reminder"))
+            {
+                return "I'm unable to send this reminder to the recipient. This could either be because they haven't whitelisted you yet, or because they've blacklisted you.";
+            }
 
             // search for keyword "every" to determine whether or not this reminder is recurring. If it's recurring, figure out
             // how often the reminder is supposed to go off. 
