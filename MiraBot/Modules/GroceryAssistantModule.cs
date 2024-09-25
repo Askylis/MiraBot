@@ -49,7 +49,8 @@ namespace MiraBot.Modules
                 return;
             }
             var ingredients = await AddIngredientsAsync();
-            if (await UserWantsToAddRecipe())
+            var wantsRecipe = await UserWantsToAddRecipe("Do you want to add a recipe?");
+            if (wantsRecipe.HasValue && wantsRecipe.Value)
             {
                 await ReplyAsync("Okay, go ahead and send me the recipe for this meal! Make sure to copy/paste it. Don't send a file or image.");
                 recipe = await GetRecipeAsync();
@@ -497,40 +498,9 @@ namespace MiraBot.Modules
             await ReplyAsync($"Okay, sent that recipe to {recipient.UserName}!");
         }
 
-        public async Task<bool> UserWantsToAddRecipe()
+        public async Task<bool?> UserWantsToAddRecipe(string question)
         {
-            bool isValid = false;
-            var wantsRecipe = false;
-            await ReplyAsync("Do you want to add a recipe to this meal? Y/N");
-
-            while (!isValid)
-            {
-                var response = await _interactiveService.NextMessageAsync(
-                        x => x.Author.Id == Context.User.Id && x.Channel.Id == Context.Channel.Id,
-                        timeout: TimeSpan.FromMinutes(2));
-
-                if (!response.IsSuccess)
-                {
-                    await ReplyAsync("You did not respond in time.");
-                    break;
-                }
-
-                if (response.Value.Content.Equals("y", StringComparison.OrdinalIgnoreCase))
-                {
-                    wantsRecipe = true;
-                    isValid = true;
-                }
-                else if (response.Value.Content.Equals("n", StringComparison.OrdinalIgnoreCase))
-                {
-                    isValid = true;
-                }
-                else
-                {
-                    await ReplyAsync("You did not enter a valid response.");
-                }
-            }
-
-            return wantsRecipe;
+            return await _helpers.UserWantsAsync(question); 
         }
 
 

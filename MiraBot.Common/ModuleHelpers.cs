@@ -46,6 +46,46 @@ namespace MiraBot.Common
             return userChoice;
         }
 
+        public async Task<bool?> UserWantsAsync(string question)
+        {
+            int counter = 0;
+            int maxAttempts = 3;
+            await ReplyAsync($"{question} Y/N");
+
+            while (counter < maxAttempts)
+            {
+                var response = await _interactive.NextMessageAsync(
+                        x => x.Author.Id == Context.User.Id && x.Channel.Id == Context.Channel.Id,
+                        timeout: TimeSpan.FromMinutes(2));
+
+                if (!response.IsSuccess)
+                {
+                    counter++;
+                    await ReplyAsync($"You did not respond in time. Please try again. You have {maxAttempts - counter} more attempts.");
+                    continue;
+                }
+
+                if (response.Value.Content.Equals("y", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+                else if (response.Value.Content.Equals("n", StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+                else
+                {
+                    counter++;
+                    if (counter < maxAttempts)
+                    {
+                        await ReplyAsync($"You did not enter a valid response. Please try again. You have {maxAttempts - counter} more attempts.");
+                    }
+                }
+            }
+
+            return null;
+        }
+
         public async Task AddNewUserAsync(User user)
         {
             await _usersRepository.AddNewUserAsync(user);
