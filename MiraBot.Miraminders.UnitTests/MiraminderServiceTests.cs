@@ -158,8 +158,11 @@ namespace MiraBot.Miraminders.UnitTests
 
             // Assert
             _remindersRepository.Verify(r => r.UpdateReminderAsync(It.Is<Reminder>(r => r.DateTime == expectedDateTime)), Times.Once());
-            Assert.That(reminder.DateTime, Is.EqualTo(expectedDateTime));
-            Assert.False(reminder.IsCompleted);
+            Assert.Multiple(() =>
+            {
+                Assert.That(reminder.DateTime, Is.EqualTo(expectedDateTime));
+                Assert.That(reminder.IsCompleted, Is.False);
+            });
         }
 
         [Test]
@@ -188,13 +191,49 @@ namespace MiraBot.Miraminders.UnitTests
 
 
         [Test]
-        public void ConvertUtcToUserTime_TimezoneIsValid_ReturnsUserTime()
+        [TestCase("2024-08-17T23:00:00Z", "US Eastern Standard Time", "19:00:00")]
+        [TestCase("2024-08-17T18:00:00Z", "GMT Standard Time", "19:00:00")]
+        public void ConvertUtcToUserTime_TimezoneIsValid_ReturnsUserTime(string utcTime, string timezone, string expectedUserTime)
         {
             // Arrange
+            var service = new MiraminderService(_remindersRepository.Object, _logger, _dateTimeProvider.Object, _usersCache.Object, _usersRepository.Object);
+            var utcDateTime = DateTime.Parse(utcTime, null, DateTimeStyles.RoundtripKind);
 
             // Act
+            var result = service.ConvertUtcDateTimeToUser(utcDateTime, timezone);
 
             // Assert
+            Assert.That(result.ToString("HH:mm:ss"), Is.EqualTo(expectedUserTime));
+        }
+
+        [Test]
+        public async Task CancelReminder_ReminderCancelled_Successfully()
+        {
+            // Arrange
+            var service = new MiraminderService(_remindersRepository.Object, _logger, _dateTimeProvider.Object, _usersCache.Object, _usersRepository.Object);
+            var message = "test";
+            var date = new DateTime(2024, 8, 15, 0, 0, 0, DateTimeKind.Utc);
+            var user = new User { DiscordId = _discordId, UserId = 2, UserName = "test" };
+            var recipient = new User { DiscordId = 2, UserId = 3, UserName = "recipient" };
+            var reminder = new Reminder { OwnerId = user.UserId, RecipientId = recipient.UserId, Message = message, DateTime = date, ReminderId = 1, IsRecurring = true };
+
+            _remindersRepository.Setup(r => r.RemoveReminderAsync(reminder.ReminderId))
+                .Callback(() =>
+                {
+                    reminder.IsCompleted = true;
+                })
+                .Returns(Task.CompletedTask);
+
+            // Act
+            await service.CancelReminderAsync(reminder);
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(reminder.IsRecurring, Is.False);
+                Assert.That(reminder.IsCompleted, Is.True);
+            });
+            _remindersRepository.Verify(r => r.RemoveReminderAsync(reminder.ReminderId), Times.Once);
         }
     }
 }

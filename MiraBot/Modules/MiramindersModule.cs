@@ -13,7 +13,6 @@ namespace MiraBot.Modules
         private readonly MiraminderService _reminderService;
         private readonly RemindersCache _cache;
         private readonly ModuleHelpers _helpers;
-        public static int result = -1;
         public const int selectMenuLimit = 24;
         private readonly IServiceProvider _serviceProvider;
 

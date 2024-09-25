@@ -1,4 +1,5 @@
 ﻿using Discord.Interactions;
+using MiraBot.Common;
 
 namespace MiraBot.Modules
 {
@@ -9,14 +10,14 @@ namespace MiraBot.Modules
         {
             if (inputs[0] == "nevermind")
             {
-                MiramindersModule.result = -1;
+                ModuleHelpers.result = -1;
                 return;
             }
 
             else
             {
                 int parsedValue = int.Parse(inputs[0].Replace("option-", ""));
-                MiramindersModule.result = parsedValue;
+                ModuleHelpers.result = parsedValue;
             }
         }
     }
