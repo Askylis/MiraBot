@@ -19,6 +19,8 @@ public partial class MiraBotContext : DbContext
     }
 
 
+    public virtual DbSet<Bug> Bugs { get; set; }
+
     public virtual DbSet<Ingredient> Ingredients { get; set; }
 
     public virtual DbSet<Meal> Meals { get; set; }
@@ -36,6 +38,24 @@ public partial class MiraBotContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Bug>(entity =>
+        {
+            entity.Property(e => e.Description)
+                .HasMaxLength(250)
+                .IsUnicode(false);
+            entity.Property(e => e.HowToReproduce)
+                .HasMaxLength(500)
+                .IsUnicode(false);
+            entity.Property(e => e.Severity)
+                .HasMaxLength(10)
+                .IsUnicode(false);
+
+            entity.HasOne(d => d.User).WithMany(p => p.Bugs)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Bugs_Users");
+        });
+
         modelBuilder.Entity<Ingredient>(entity =>
         {
             entity.Property(e => e.Name)

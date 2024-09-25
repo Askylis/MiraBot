@@ -1,6 +1,7 @@
 ﻿using Discord.Interactions;
 using Fergun.Interactive;
 using Microsoft.IdentityModel.Tokens;
+using MiraBot.Common;
 using MiraBot.Communication;
 using MiraBot.DataAccess;
 using MiraBot.GroceryAssistance;
@@ -13,7 +14,6 @@ namespace MiraBot.Modules
     {
         private readonly GroceryAssistant _groceryAssistant;
         private readonly InteractiveService _interactiveService;
-        private readonly GroceryAssistantComponents _components;
         private readonly ModuleHelpers _helpers;
         private readonly UserCommunications _comms;
         internal static int modifyValue = 0;
@@ -23,12 +23,11 @@ namespace MiraBot.Modules
         internal const int selectMenuLimit = 24;
         internal const int maxIngredientLength = 1500;
         internal const int maxRecipeLength = 65535;
-        public GroceryAssistantModule(GroceryAssistant groceryAssistant, InteractiveService interactiveService,
-            GroceryAssistantComponents components, ModuleHelpers moduleHelpers, UserCommunications comms)
+        public GroceryAssistantModule(GroceryAssistant groceryAssistant, InteractiveService interactiveService, 
+            ModuleHelpers moduleHelpers, UserCommunications comms)
         {
             _groceryAssistant = groceryAssistant;
             _interactiveService = interactiveService;
-            _components = components;
             _helpers = moduleHelpers;
             _comms = comms;
         }
@@ -36,8 +35,13 @@ namespace MiraBot.Modules
         [SlashCommand("gaadd", "Add a new meal and associated ingredients.")]
         public async Task AddMealAsync()
         {
+            if (! await _helpers.UserExistsAsync(Context.User.Id))
+            {
+                await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
+                return;
+            }
+            await _helpers.UpdateUsernameIfChangedAsync(Context);
             string? recipe = null;
-            await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
             await RespondAsync("What's the name of your new meal?");
             string mealName = await GetValidNameAsync(isIngredient: false);
             if (mealName is null)
@@ -62,7 +66,12 @@ namespace MiraBot.Modules
         [SlashCommand("gadelete", "Lets you delete one of your saved meals.")]
         public async Task DeleteMealAsync()
         {
-            await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
+            if (!await _helpers.UserExistsAsync(Context.User.Id))
+            {
+                await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
+                return;
+            }
+            await _helpers.UpdateUsernameIfChangedAsync(Context);
             int index = 0;
             await RespondAsync("One moment, please!");
             var meals = await _groceryAssistant.GetAllMealsAsync(Context.User.Id);
@@ -74,11 +83,14 @@ namespace MiraBot.Modules
             }
             while (index != -1)
             {
-                index = await GetMealIndexAsync(meals,
+                index = await _helpers.GetIndexOfUserChoiceAsync(
+                meals,
                 "Choose which meal you'd like to delete.",
-                "delete-menu",
                 "Remove this meal from your saved meals.",
-          Context);
+                Context,
+                "delete-menu",
+                meals => meals.Name
+                );
                 if (index == -1)
                 {
                     break;
@@ -93,7 +105,12 @@ namespace MiraBot.Modules
         [SlashCommand("gaedit", "Lets you edit one of your saved meals.")]
         public async Task EditMealAsync()
         {
-            await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
+            if (!await _helpers.UserExistsAsync(Context.User.Id))
+            {
+                await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
+                return;
+            }
+            await _helpers.UpdateUsernameIfChangedAsync(Context);
             int index = 0;
             int selection = 0;
             await RespondAsync("One moment, please!");
@@ -105,11 +122,14 @@ namespace MiraBot.Modules
                 return;
             }
 
-            index = await GetMealIndexAsync(meals,
+            index = await _helpers.GetIndexOfUserChoiceAsync(
+            meals,
             "Choose which meal you'd like to edit.",
-            "edit-menu",
             "Modify this meal",
-      Context);
+            Context,
+            "edit-menu",
+            meal => meal.Name
+            );
 
             if (index == -1)
             {
@@ -124,11 +144,13 @@ namespace MiraBot.Modules
                         "Modify the recipe."
                     };
             await ReplyAsync("Do you want to edit the name, ingredients, both, or modify its recipe?");
-            await _components.GenerateMenuAsync(options,
+            await _helpers.GetIndexOfUserChoiceAsync(
+                options,
                 "Choose what to edit.",
-                "edit-menu",
                 null,
-                Context
+                Context,
+                "edit-menu",
+                option => option
                 );
             selection = modifyValue;
             modifyValue = 0;
@@ -192,11 +214,16 @@ namespace MiraBot.Modules
         [SlashCommand("galist", "Lists all meals, along with associated ingredients, that are owned by you.")]
         public async Task ListMealsAsync()
         {
-            await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
+            if (!await _helpers.UserExistsAsync(Context.User.Id))
+            {
+                await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
+                return;
+            }
+            await _helpers.UpdateUsernameIfChangedAsync(Context);
             await RespondAsync("Gimme just a sec!");
             var meals = await _groceryAssistant.GetAllMealsAsync(Context.User.Id);
 
-            if (!meals.Any())
+            if (meals.Count == 0)
             {
                 await ReplyAsync("You have no meals saved.");
                 return;
@@ -217,7 +244,12 @@ namespace MiraBot.Modules
         [SlashCommand("ga", "Generates a new list of grocery ideas.")]
         public async Task GenerateMealsListAsync()
         {
-            await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
+            if (!await _helpers.UserExistsAsync(Context.User.Id))
+            {
+                await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
+                return;
+            }
+            await _helpers.UpdateUsernameIfChangedAsync(Context);
             var meals = await _groceryAssistant.GetAllMealsAsync(Context.User.Id);
             var mealCount = meals.Count;
             await RespondAsync($"Okay, tell me how many meals you want! You have {mealCount} total meals. You can also select \"0\" to cancel this command.");
@@ -236,11 +268,14 @@ namespace MiraBot.Modules
 
             while (numberOfMeals < mealCount && index > -1)
             {
-                index = await GetMealIndexAsync(selectedMeals,
+                index = await _helpers.GetIndexOfUserChoiceAsync(
+                    selectedMeals,
                     "Choose override preference",
-                    "override-menu",
                     "Remove this meal from your selected meals.",
-                    Context);
+                    Context,
+                    "override-menu",
+                    meal => meal.Name
+                    );
                 if (index >= 0)
                 {
                     string removedMeal = selectedMeals[index].Name;
@@ -271,7 +306,12 @@ namespace MiraBot.Modules
         [SlashCommand("gaconvert", "Converts old Grocery Assistant meals files into database entries.")]
         public async Task ConvertMealsFileAsync()
         {
-            await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
+            if (!await _helpers.UserExistsAsync(Context.User.Id))
+            {
+                await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
+                return;
+            }
+            await _helpers.UpdateUsernameIfChangedAsync(Context);
             await RespondAsync("I'll help you convert the old meals file from the original Grocery Assistant to a format that I can understand! Just send your meals file and I'll do the rest! Keep in mind that I will not convert any meals you have that have no ingredients listed.");
             var mealsFile = await _interactiveService.NextMessageAsync(x => x.Author.Id == Context.User.Id && x.Channel.Id == Context.Channel.Id,
             timeout: TimeSpan.FromMinutes(2));
@@ -321,8 +361,14 @@ namespace MiraBot.Modules
         [SlashCommand("gaaddrecipe", "Add a recipe to an existing meal.")]
         public async Task AddRecipeAsync(bool isEdit, int mealId = 0)
         {
+            if (!await _helpers.UserExistsAsync(Context.User.Id))
+            {
+                await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
+                return;
+            }
+            await _helpers.UpdateUsernameIfChangedAsync(Context);
+
             Meal meal = new();
-            await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
 
             if (mealId == 0 && !isEdit)
             {
@@ -333,11 +379,14 @@ namespace MiraBot.Modules
                     return;
                 }
                 await ReplyAsync("First, select which meal you'd like to add a recipe to.");
-                int index = await GetMealIndexAsync(meals,
+                int index = await _helpers.GetIndexOfUserChoiceAsync(
+                meals,
                 "Choose which meal you'd like to add a recipe to.",
-                "recipe-menu",
                 "Add a recipe to this meal.",
-                Context);
+                Context,
+                "recipe-menu",
+                meal => meal.Name
+                );
 
                 if (index == -1)
                 {
@@ -366,11 +415,16 @@ namespace MiraBot.Modules
         [SlashCommand("gagetrecipe", "Retrieve a recipe for a specified meal.")]
         public async Task RetrieveRecipeAsync()
         {
+            await DeferAsync();
+            if (!await _helpers.UserExistsAsync(Context.User.Id))
+            {
+                await FollowupAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
+                return;
+            }
+            await _helpers.UpdateUsernameIfChangedAsync(Context);
+
             Meal meal;
             int mealId = 0;
-            await DeferAsync();
-            await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
-
             var all = await _groceryAssistant.GetAllMealsAsync(Context.User.Id);
             var meals = all.Where(m => !m.Recipe.IsNullOrEmpty()).ToList();
             if (meals.Count == 0)
@@ -380,11 +434,14 @@ namespace MiraBot.Modules
             }
 
             await FollowupAsync("Which meal's recipe do you want to see?");
-            int index = await GetMealIndexAsync(meals,
+            int index = await _helpers.GetIndexOfUserChoiceAsync(
+            meals,
             "Choose which recipe you'd like to view.",
-            "recipe-menu",
             "Add a recipe to this meal.",
-            Context);
+            Context,
+            "recipe-menu",
+            meal => meal.Name
+            );
 
             if (index == -1)
             {
@@ -398,14 +455,22 @@ namespace MiraBot.Modules
         [SlashCommand("gashare", "Share a recipe with another user.")]
         public async Task ShareRecipeAsync(string recipientName)
         {
-            var recipient = await _groceryAssistant.GetUserByNameAsync(recipientName);
-            var owner = await _groceryAssistant.GetUserByDiscordIdAsync(Context.User.Id);
+            if (!await _helpers.UserExistsAsync(Context.User.Id))
+            {
+                await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
+                return;
+            }
+            await _helpers.UpdateUsernameIfChangedAsync(Context);
+
+            var recipient = await _helpers.GetUserByNameAsync(recipientName);
+            var owner = await _helpers.GetUserByDiscordIdAsync(Context.User.Id);
+
             if (recipient is null)
             {
                 await RespondAsync($"Could not find a user with the username \"{recipientName}\". Please try again with a valid username.");
                 return;
             }
-            await _groceryAssistant.CheckForNewUserAsync(Context.User.Username, Context.User.Id);
+
             var meals = await _groceryAssistant.GetAllMealsAsync(Context.User.Id);
             var mealsWithRecipes = meals.Where(m =>  m.Recipe != null).ToList();
             if (mealsWithRecipes.Count == 0)
@@ -414,11 +479,14 @@ namespace MiraBot.Modules
                 return;
             }
             await RespondAsync("Which meal would you like to share?");
-            int index = await GetMealIndexAsync(mealsWithRecipes,
+            int index = await _helpers.GetIndexOfUserChoiceAsync(
+            mealsWithRecipes,
             "Choose which recipe you'd like to share.",
-            "share-menu",
             "Share this meal.",
-            Context);
+            Context,
+            "share-menu",
+            meal => meal.Name
+            );
 
             if (index == -1)
             {
@@ -474,33 +542,6 @@ namespace MiraBot.Modules
             {
                 await ReplyAsync(message);
             }
-        }
-
-
-        public async Task<int> GetMealIndexAsync(List<Meal> meals, string placeholder, string customId, string? description, SocketInteractionContext ctx)
-        {
-            int selection;
-            if (meals.Count <= selectMenuLimit)
-            {
-                var names = meals.Select(m => m.Name).ToList();
-
-                await _components.GenerateMenuAsync(names,
-                    placeholder,
-                    customId,
-                    description,
-                    ctx);
-                selection = modifyValue;
-                modifyValue = 0;
-            }
-
-            else
-            {
-                await SendLongMessageAsync(meals: meals);
-                selection = await _helpers.GetValidNumberAsync(0, meals.Count, Context);
-                selection--;
-            }
-
-            return selection;
         }
 
         public async Task<string> GetRecipeAsync()

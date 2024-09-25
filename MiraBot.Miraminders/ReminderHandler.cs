@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Options;
+using MiraBot.Common;
 using MiraBot.DataAccess;
 using System.Globalization;
 using System.Text.RegularExpressions;
@@ -14,16 +15,19 @@ namespace MiraBot.Miraminders
         private readonly RemindersCache _reminderCache;
         private readonly UsersCache _userCache;
         private readonly IOptions<ReminderOptions> _options;
+        private readonly ModuleHelpers _helpers;
         public ReminderHandler(
             MiraminderService service,
             RemindersCache cache,
             UsersCache usersCache,
-            IOptions<ReminderOptions> options)
+            IOptions<ReminderOptions> options,
+            ModuleHelpers helpers)
         {
             _service = service;
             _reminderCache = cache;
             _userCache = usersCache;
             _options = options;
+            _helpers = helpers;
         }
 
         public async Task<string> ParseReminderAsync(string input, ulong ownerId)
@@ -32,7 +36,7 @@ namespace MiraBot.Miraminders
             // splits the input into a list for easier management
             completeInput = input.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
 
-            var owner = await _service.GetUserByDiscordIdAsync(ownerId);
+            var owner = await _helpers.GetUserByDiscordIdAsync(ownerId);
 
             if (owner.Reminders.Count >= _options.Value.MaxReminderCount && owner.UserName != _options.Value.DevUserName)
             {

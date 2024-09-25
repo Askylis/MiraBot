@@ -33,43 +33,6 @@ namespace MiraBot.Miraminders
             return user?.Timezone;
         }
 
-        public async Task<User?> GetUserAsync(int userId)
-        {
-            return await _usersRepository.GetUserByUserIdAsync(userId)
-                .ConfigureAwait(false);
-        }
-
-        public async Task<User> EnsureUserExistsAsync(ulong discordId, string username)
-        {
-            var user = await _usersRepository.GetUserByDiscordIdAsync(discordId);
-            if (user is not null)
-            {
-                return user;
-            }
-
-            var newUser = new User { DiscordId = discordId, UserName = username };
-            await _usersRepository.AddNewUserAsync(newUser);
-            await _usersCache.RefreshCacheAsync();
-            return newUser;
-        }
-
-        public async Task<User?> GetUserByNameAsync(string userName)
-        {
-            return await _usersRepository.GetUserByNameAsync(userName)
-                .ConfigureAwait(false);
-        }
-
-        public async Task<User?> GetUserByDiscordIdAsync(ulong discordId)
-        {
-            return await _usersRepository.GetUserByDiscordIdAsync(discordId);
-        }
-
-        public static bool IsValidTimezone(string timezoneId)
-        {
-            return TimeZoneInfo
-                .GetSystemTimeZones()
-                .Any(t => t.Id.Equals(timezoneId, StringComparison.OrdinalIgnoreCase));
-        }
 
         public async Task AddReminderAsync(Reminder reminder)
         {
@@ -97,10 +60,6 @@ namespace MiraBot.Miraminders
             await _remindersRepository.RemoveReminderAsync(reminder.ReminderId);
         }
 
-        public async Task FindReminderAsync(Reminder reminder)
-        {
-            
-        }
 
         public DateTime ConvertUserTimeToUtc(TimeOnly requestedTime, string userTimezoneId)
         {
@@ -120,35 +79,6 @@ namespace MiraBot.Miraminders
             return userTime;
         }
 
-
-        public async Task AddTimezoneToUserAsync(ulong discordId, string timezoneId)
-        {
-            var user = await _usersRepository.GetUserByDiscordIdAsync(discordId)
-                .ConfigureAwait(false);
-
-            if (user is not null)
-            {
-                user.Timezone = timezoneId;
-                await _usersRepository.ModifyUserAsync(user);
-            }
-        }
-
-        public async Task AddDateFormatToUserAsync(ulong discordId, bool isAmerican)
-        {
-            var user = await _usersRepository.GetUserByDiscordIdAsync(discordId)
-                .ConfigureAwait(false);
-
-            user.UsesAmericanDateFormat = isAmerican;
-            await _usersRepository.ModifyUserAsync(user);
-        }
-
-        public static string CreateTimezoneFile()
-        {
-            var fileName = Path.ChangeExtension(Path.GetRandomFileName(), ".txt");
-            var timeZones = TimeZoneInfo.GetSystemTimeZones();
-            File.WriteAllLines(fileName, timeZones.Select(t => t.Id).ToArray());
-            return fileName;
-        }
 
         public async Task<List<string>> SendLongMessage(List<Reminder> reminders)
         {
