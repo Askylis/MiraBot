@@ -1,4 +1,5 @@
 ﻿using Discord.Interactions;
+using MiraBot.Common;
 
 namespace MiraBot.Modules
 {
@@ -51,13 +52,13 @@ namespace MiraBot.Modules
                 };
 
                 await ReplyAsync(message);
-                GroceryAssistantModule.modifyValue = -1;
+                ModuleHelpers.result = -1;
 
             }
             else
             {
                 int parsedValue = int.Parse(inputs[0].Replace("option-", ""));
-                GroceryAssistantModule.modifyValue = parsedValue;
+                ModuleHelpers.result = parsedValue;
             }
         }
 

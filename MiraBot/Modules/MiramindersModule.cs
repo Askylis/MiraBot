@@ -46,7 +46,7 @@ namespace MiraBot.Modules
                 await _helpers.SaveUserTimezoneAsync(owner);
             }
             var handler = _serviceProvider.GetRequiredService<ReminderHandler>();
-            await ReplyAsync(await handler.ParseReminderAsync(input, Context.User.Id));
+            await ReplyAsync(await handler.ParseReminderAsync(input, Context.User.Id, Context));
         }
 
 
