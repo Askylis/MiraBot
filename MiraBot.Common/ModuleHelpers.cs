@@ -51,6 +51,15 @@ namespace MiraBot.Common
             await _usersRepository.AddNewUserAsync(user);
         }
 
+        public async Task UpdateUsernameIfChangedAsync(SocketInteractionContext context)
+        {
+            var user = await _usersRepository.GetUserByDiscordIdAsync(context.User.Id);
+            if (user.UserName != context.User.Username)
+            {
+                await _usersRepository.ModifyUserAsync(user);
+            }
+        }
+
         public async Task SaveUserTimezoneAsync(User owner)
         {
             await SendTimezoneFileAsync();

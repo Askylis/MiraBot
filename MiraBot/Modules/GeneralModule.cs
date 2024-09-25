@@ -30,6 +30,12 @@ namespace MiraBot.Modules
         [SlashCommand("help", "Displays all available Mira functionality and provides information on how to use it all.")]
         public async Task HelpAsync()
         {
+            if (!await _helpers.UserExistsAsync(Context.User.Id))
+            {
+                await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
+                return;
+            }
+            await _helpers.UpdateUsernameIfChangedAsync(Context);
             // maybe update this later to provide more in-depth information about specific commands?
             var builder = new EmbedBuilder()
                 .WithTitle("Available Commands")
@@ -77,6 +83,13 @@ namespace MiraBot.Modules
         {
             // log bugs elsewhere? like in console. or in bot channel in discord server?
             // also need to add a permission that blacklists people from submitting bug reports, but doesn't outright ban them from Mira?
+            await RespondAsync("Gimme a sec to look at this...");
+            if (!await _helpers.UserExistsAsync(Context.User.Id))
+            {
+                await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
+                return;
+            }
+            await _helpers.UpdateUsernameIfChangedAsync(Context);
             var user = await _helpers.GetUserByDiscordIdAsync(Context.User.Id);
 
             await RespondAsync($"Please describe the bug. Do not put steps to reproduce here. Responses cannot be longer than {maxDescriptionLength} characters long.");

@@ -40,6 +40,7 @@ namespace MiraBot.Modules
                 await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
                 return;
             }
+            await _helpers.UpdateUsernameIfChangedAsync(Context);
             string? recipe = null;
             await RespondAsync("What's the name of your new meal?");
             string mealName = await GetValidNameAsync(isIngredient: false);
@@ -70,6 +71,7 @@ namespace MiraBot.Modules
                 await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
                 return;
             }
+            await _helpers.UpdateUsernameIfChangedAsync(Context);
             int index = 0;
             await RespondAsync("One moment, please!");
             var meals = await _groceryAssistant.GetAllMealsAsync(Context.User.Id);
@@ -108,6 +110,7 @@ namespace MiraBot.Modules
                 await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
                 return;
             }
+            await _helpers.UpdateUsernameIfChangedAsync(Context);
             int index = 0;
             int selection = 0;
             await RespondAsync("One moment, please!");
@@ -216,6 +219,7 @@ namespace MiraBot.Modules
                 await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
                 return;
             }
+            await _helpers.UpdateUsernameIfChangedAsync(Context);
             await RespondAsync("Gimme just a sec!");
             var meals = await _groceryAssistant.GetAllMealsAsync(Context.User.Id);
 
@@ -245,6 +249,7 @@ namespace MiraBot.Modules
                 await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
                 return;
             }
+            await _helpers.UpdateUsernameIfChangedAsync(Context);
             var meals = await _groceryAssistant.GetAllMealsAsync(Context.User.Id);
             var mealCount = meals.Count;
             await RespondAsync($"Okay, tell me how many meals you want! You have {mealCount} total meals. You can also select \"0\" to cancel this command.");
@@ -306,6 +311,7 @@ namespace MiraBot.Modules
                 await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
                 return;
             }
+            await _helpers.UpdateUsernameIfChangedAsync(Context);
             await RespondAsync("I'll help you convert the old meals file from the original Grocery Assistant to a format that I can understand! Just send your meals file and I'll do the rest! Keep in mind that I will not convert any meals you have that have no ingredients listed.");
             var mealsFile = await _interactiveService.NextMessageAsync(x => x.Author.Id == Context.User.Id && x.Channel.Id == Context.Channel.Id,
             timeout: TimeSpan.FromMinutes(2));
@@ -360,6 +366,7 @@ namespace MiraBot.Modules
                 await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
                 return;
             }
+            await _helpers.UpdateUsernameIfChangedAsync(Context);
 
             Meal meal = new();
 
@@ -414,6 +421,7 @@ namespace MiraBot.Modules
                 await FollowupAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
                 return;
             }
+            await _helpers.UpdateUsernameIfChangedAsync(Context);
 
             Meal meal;
             int mealId = 0;
@@ -452,6 +460,7 @@ namespace MiraBot.Modules
                 await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
                 return;
             }
+            await _helpers.UpdateUsernameIfChangedAsync(Context);
 
             var recipient = await _helpers.GetUserByNameAsync(recipientName);
             var owner = await _helpers.GetUserByDiscordIdAsync(Context.User.Id);

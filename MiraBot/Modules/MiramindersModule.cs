@@ -1,6 +1,4 @@
-﻿using Discord;
-using Discord.Interactions;
-using Fergun.Interactive;
+﻿using Discord.Interactions;
 using Microsoft.Extensions.DependencyInjection;
 using MiraBot.Common;
 using MiraBot.DataAccess;
@@ -12,7 +10,6 @@ namespace MiraBot.Modules
     [NotBanned]
     public class MiramindersModule : InteractionModuleBase<SocketInteractionContext>
     {
-        private readonly InteractiveService _interactive;
         private readonly MiraminderService _reminderService;
         private readonly RemindersCache _cache;
         private readonly ModuleHelpers _helpers;
@@ -21,13 +18,11 @@ namespace MiraBot.Modules
         private readonly IServiceProvider _serviceProvider;
 
         public MiramindersModule(
-            InteractiveService interactive,
             MiraminderService reminder,
             RemindersCache cache,
             ModuleHelpers moduleHelpers,
             IServiceProvider serviceProvider)
         {
-            _interactive = interactive;
             _reminderService = reminder;
             _cache = cache;
             _helpers = moduleHelpers;
@@ -44,6 +39,7 @@ namespace MiraBot.Modules
                 await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
                 return;
             }
+            await _helpers.UpdateUsernameIfChangedAsync(Context);
             var owner = await _helpers.GetUserByNameAsync(Context.User.Username);
             if (owner.Timezone is null)
             {
@@ -62,6 +58,7 @@ namespace MiraBot.Modules
                 await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
                 return;
             }
+            await _helpers.UpdateUsernameIfChangedAsync(Context);
             int index = 0;
             var user = await _helpers.GetUserByDiscordIdAsync(Context.User.Id);
             var reminders = _cache.GetCacheContentsByUser(user.UserId);
@@ -100,6 +97,13 @@ namespace MiraBot.Modules
         public async Task ListRemindersAsync()
         {
             await RespondAsync("Gimme just a sec!");
+            if (!await _helpers.UserExistsAsync(Context.User.Id))
+            {
+                await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
+                return;
+            }
+            await _helpers.UpdateUsernameIfChangedAsync(Context);
+
             var user = await _helpers.GetUserByDiscordIdAsync(Context.User.Id);
             var reminders = _cache.GetCacheContentsByUser(user.UserId);
             if (reminders.Count == 0)
@@ -120,6 +124,8 @@ namespace MiraBot.Modules
                 await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
                 return;
             }
+            await _helpers.UpdateUsernameIfChangedAsync(Context);
+
             var user = await _helpers.GetUserByDiscordIdAsync(Context.User.Id);
             var reminders = _cache.GetCacheContentsByUser(user.UserId);
             List<Reminder> matchingReminders = [];
