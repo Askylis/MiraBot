@@ -9,13 +9,13 @@ namespace MiraBot.GroceryAssistance
     public class GroceryAssistant
     {
         private readonly IGroceryAssistantRepository _groceryAssistantRepository;
-        private readonly UsersRepository _usersRepository;
+        private readonly IUsersRepository _usersRepository;
         private readonly ILogger<GroceryAssistant> _logger;
 
         public GroceryAssistant(
             IGroceryAssistantRepository groceryAssistantRepository,
             ILogger<GroceryAssistant> logger,
-            UsersRepository usersRepository)
+            IUsersRepository usersRepository)
         {
             _groceryAssistantRepository = groceryAssistantRepository;
             _logger = logger;

@@ -9,10 +9,10 @@ namespace MiraBot.Modules
     public class ButtonHandler : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly IGroceryAssistantRepository _gaRepository;
-        private readonly UsersRepository _usersRepository;
+        private readonly IUsersRepository _usersRepository;
         private readonly GroceryAssistant _ga;
 
-        public ButtonHandler(IGroceryAssistantRepository repository, UsersRepository usersRepository, GroceryAssistant ga)
+        public ButtonHandler(IGroceryAssistantRepository repository, IUsersRepository usersRepository, GroceryAssistant ga)
         {
             _gaRepository = repository;
             _usersRepository = usersRepository;

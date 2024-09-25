@@ -4,7 +4,7 @@ using MiraBot.DataAccess.Exceptions;
 
 namespace MiraBot.DataAccess.Repositories
 {
-    public class UsersRepository
+    public class UsersRepository : IUsersRepository
     {
         private readonly DatabaseOptions _databaseOptions;
         public UsersRepository(IOptions<DatabaseOptions> databaseOptions)

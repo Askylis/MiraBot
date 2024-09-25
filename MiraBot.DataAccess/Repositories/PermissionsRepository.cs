@@ -6,9 +6,9 @@ namespace MiraBot.DataAccess.Repositories
     public class PermissionsRepository
     {
         private readonly DatabaseOptions _databaseOptions;
-        private readonly UsersRepository _usersRepository;
+        private readonly IUsersRepository _usersRepository;
 
-        public PermissionsRepository(IOptions<DatabaseOptions> databaseOptions, UsersRepository usersRepository)
+        public PermissionsRepository(IOptions<DatabaseOptions> databaseOptions, IUsersRepository usersRepository)
         {
             _databaseOptions = databaseOptions.Value;
             _usersRepository = usersRepository;

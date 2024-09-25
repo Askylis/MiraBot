@@ -9,11 +9,11 @@ namespace MiraBot.Common
     public class ModuleHelpers : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly InteractiveService _interactive;
-        private readonly UsersRepository _usersRepository;
+        private readonly IUsersRepository _usersRepository;
         private readonly BugRepository _bugRepository;
         public static int result = -1;
         internal const int selectMenuLimit = 24;
-        public ModuleHelpers(InteractiveService interactiveService, UsersRepository usersRepository, BugRepository bugRepository)
+        public ModuleHelpers(InteractiveService interactiveService, IUsersRepository usersRepository, BugRepository bugRepository)
         {
             _interactive = interactiveService;
             _usersRepository = usersRepository;

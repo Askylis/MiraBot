@@ -10,13 +10,13 @@ namespace MiraBot.Miraminders
     public class MiraminderService
     {
         private readonly IMiramindersRepository _remindersRepository;
-        private readonly UsersRepository _usersRepository;
+        private readonly IUsersRepository _usersRepository;
         private readonly ILogger<MiraminderService> _logger;
         private readonly IDateTimeProvider _dateTimeProvider;
-        private readonly UsersCache _usersCache;
+        private readonly IUsersCache _usersCache;
 
         public MiraminderService(IMiramindersRepository repository, ILogger<MiraminderService> logger, 
-            IDateTimeProvider dateTimeProvider, UsersCache usersCache, UsersRepository usersRepository)
+            IDateTimeProvider dateTimeProvider, IUsersCache usersCache, IUsersRepository usersRepository)
         {
             _remindersRepository = repository;
             _logger = logger;

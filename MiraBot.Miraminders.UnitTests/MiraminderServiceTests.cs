@@ -1,4 +1,3 @@
-using Discord;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using MiraBot.Common;
@@ -9,13 +8,13 @@ using System.Globalization;
 
 namespace MiraBot.Miraminders.UnitTests
 {
-    public class Tests
+    public class MiraminderServiceTests
     {
         private ILogger<MiraminderService> _logger;
         private Mock<IMiramindersRepository> _remindersRepository;
-        private Mock<UsersRepository> _usersRepository;
+        private Mock<IUsersRepository> _usersRepository;
         private Mock<IDateTimeProvider> _dateTimeProvider;
-        private Mock<UsersCache> _usersCache;
+        private Mock<IUsersCache> _usersCache;
         private readonly ulong _discordId = 1;
         private readonly int _userId = 5;
 
@@ -24,8 +23,9 @@ namespace MiraBot.Miraminders.UnitTests
         {
             _logger = new Mock<ILogger<MiraminderService>>().Object;
             _remindersRepository = new Mock<IMiramindersRepository>();
-            _usersRepository = new Mock<UsersRepository>();
+            _usersRepository = new Mock<IUsersRepository>();
             _dateTimeProvider = new Mock<IDateTimeProvider>();
+            _usersCache = new Mock<IUsersCache>();
         }
 
         [Test]
@@ -149,10 +149,12 @@ namespace MiraBot.Miraminders.UnitTests
         }
 
         [Test]
-        public async Task UpdateRecurringReminder_DateTimeIsDifferent_ReminderIsUpdated()
+        public async Task UpdateRecurringReminder_DateTimeIsUpdated_Correctly()
         {
             // Arrange
-            var service = new MiraminderService(_remindersRepository.Object, _logger, _dateTimeProvider.Object, _usersCache.Object, _usersRepository.Object);
+            var service = new MiraminderService(
+                _remindersRepository.Object, _logger, 
+                _dateTimeProvider.Object, _usersCache.Object, _usersRepository.Object);
             var originalDateTime = new DateTime(2024, 8, 15, 0, 0, 0, DateTimeKind.Utc);
             var ownerId = 1;
             var message = "test";
@@ -163,16 +165,32 @@ namespace MiraBot.Miraminders.UnitTests
                 IsRecurring = false,
                 IsCompleted = false,
                 Message = message,
-                DateTime = originalDateTime
-
+                DateTime = originalDateTime,
+                InSeconds = 1,
+                InMinutes = 1,
+                InHours = 1,
+                InDays = 1,
+                InWeeks = 1,
+                InMonths = 1,
+                InYears = 1,
             };
+
+            var expectedDateTime = originalDateTime
+                .AddSeconds(1)
+                .AddMinutes(1)
+                .AddHours(1)
+                .AddDays(1)
+                .AddDays(7)
+                .AddMonths(1)
+                .AddYears(1);
 
             // Act
             await service.UpdateRecurringReminderAsync(reminder);
 
             // Assert
-            _remindersRepository.Verify(r => r.UpdateReminderAsync(It.Is<Reminder>(r => r.DateTime == originalDateTime.AddDays(1))), Times.Once());
-            Assert.That(reminder.DateTime, Is.EqualTo(originalDateTime.AddDays(1)));
+            _remindersRepository.Verify(r => r.UpdateReminderAsync(It.Is<Reminder>(r => r.DateTime == expectedDateTime)), Times.Once());
+            Assert.That(reminder.DateTime, Is.EqualTo(expectedDateTime));
+            Assert.False(reminder.IsCompleted);
         }
 
         [Test]
