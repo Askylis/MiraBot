@@ -18,6 +18,7 @@ public partial class MiraBotContext : DbContext
     {
     }
 
+    public virtual DbSet<Blacklist> Blacklists { get; set; }
 
     public virtual DbSet<Bug> Bugs { get; set; }
 
@@ -33,11 +34,32 @@ public partial class MiraBotContext : DbContext
 
     public virtual DbSet<User> Users { get; set; }
 
+    public virtual DbSet<Whitelist> Whitelists { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.UseSqlServer(_connectionString);
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Blacklist>(entity =>
+        {
+            entity.HasNoKey();
+
+            entity.Property(e => e.BlacklistId)
+                .ValueGeneratedOnAdd()
+                .HasColumnName("BlacklistID");
+
+            entity.HasOne(d => d.RecipientUser).WithMany()
+                .HasForeignKey(d => d.RecipientUserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Blacklists_Recipients");
+
+            entity.HasOne(d => d.SenderUser).WithMany()
+                .HasForeignKey(d => d.SenderUserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Blacklists_Senders");
+        });
+
         modelBuilder.Entity<Bug>(entity =>
         {
             entity.Property(e => e.Description)
@@ -179,6 +201,22 @@ public partial class MiraBotContext : DbContext
                         j.HasKey("UserId", "PermissionId");
                         j.ToTable("UserPermissions");
                     });
+        });
+
+        modelBuilder.Entity<Whitelist>(entity =>
+        {
+            entity.HasNoKey();
+
+            entity.Property(e => e.WhitelistId).ValueGeneratedOnAdd();
+
+            entity.HasOne(d => d.Recipient).WithMany()
+                .HasForeignKey(d => d.RecipientId)
+                .HasConstraintName("FK_Whitelists_Recipients");
+
+            entity.HasOne(d => d.Sender).WithMany()
+                .HasForeignKey(d => d.SenderId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Whitelists_Senders");
         });
 
         OnModelCreatingPartial(modelBuilder);
