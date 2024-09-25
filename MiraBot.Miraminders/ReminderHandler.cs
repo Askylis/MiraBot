@@ -14,16 +14,16 @@ namespace MiraBot.Miraminders
         private readonly TimeOnly defaultTime = new(17, 0);
         private List<string> completeInput;
         private static readonly string[] keywords = ["in", "on", "at", "every", "to", "that", "and", "from", "now", "a", "an", "next"];
-        private readonly RemindersCache _reminderCache;
-        private readonly UsersCache _userCache;
-        private readonly IOptions<ReminderOptions> _options;
+        private readonly IRemindersCache _reminderCache;
+        private readonly IUsersCache _userCache;
+        private readonly IOptions<MiraOptions> _options;
         private readonly ModuleHelpers _helpers;
         private readonly UserCommunications _comms;
         public ReminderHandler(
             MiraminderService service,
-            RemindersCache cache,
-            UsersCache usersCache,
-            IOptions<ReminderOptions> options,
+            IRemindersCache cache,
+            IUsersCache usersCache,
+            IOptions<MiraOptions> options,
             ModuleHelpers helpers,
             UserCommunications comms)
         {
@@ -125,11 +125,11 @@ namespace MiraBot.Miraminders
             if (reminder.IsRecurring)
             {
                 var frequency = GetRecurringReminderFrequency(reminder);
-                return $"Got it! Your reminder will go off every {frequency}. The next reminder will be sent on {DateOnly.FromDateTime(reminder.DateTime)} at {TimeOnly.FromDateTime(_service.ConvertUtcToUserTime(TimeOnly.FromDateTime(reminder.DateTime), owner.Timezone))}.";
+                return $"Got it! Your reminder will go off every {frequency}. The next reminder will be sent on {DateOnly.FromDateTime(reminder.DateTime)} at {TimeOnly.FromDateTime(_service.ConvertUtcDateTimeToUser(reminder.DateTime, owner.Timezone))}.";
             }
             else
             {
-                return $"Got it, your reminder has been saved! It will go off on {DateOnly.FromDateTime(reminder.DateTime)} at {TimeOnly.FromDateTime(_service.ConvertUtcToUserTime(TimeOnly.FromDateTime(reminder.DateTime), owner.Timezone))}.";
+                return $"Got it, your reminder has been saved! It will go off on {DateOnly.FromDateTime(reminder.DateTime)} at {TimeOnly.FromDateTime(_service.ConvertUtcDateTimeToUser(reminder.DateTime, owner.Timezone))}.";
             }
         }
 
@@ -281,7 +281,7 @@ namespace MiraBot.Miraminders
 
         private DateTime? GetSpecifiedTimeAsync(User owner)
         {
-            TimeOnly time = new();
+            DateTime dateTime = new();
             var index = 0;
             var timeIndex = -1;
             bool timeFound = false;
@@ -289,7 +289,7 @@ namespace MiraBot.Miraminders
 
             foreach (var word in completeInput)
             {
-                if (TimeOnly.TryParse(word, out time))
+                if (DateTime.TryParse(word, out dateTime))
                 {
                     // if it can parse an element in completeInput, then it searches for AM/PM
                     if (index != completeInput.Count - 1 && completeInput[index + 1].Equals("AM", StringComparison.OrdinalIgnoreCase) || completeInput[index + 1].Equals("PM", StringComparison.OrdinalIgnoreCase))
@@ -309,7 +309,7 @@ namespace MiraBot.Miraminders
             if (timeIndex > -1)
             {
                 completeInput[timeIndex] = $"{completeInput[timeIndex]}{completeInput[timeIndex + 1]}";
-                TimeOnly.TryParse(completeInput[timeIndex], out time);
+                DateTime.TryParse(completeInput[timeIndex], out dateTime);
                 UpdateCompleteInput(removeRange);
             }
             else
@@ -325,7 +325,7 @@ namespace MiraBot.Miraminders
                 return null;
             }
 
-            var utcTime = _service.ConvertUserTimeToUtc(time, owner.Timezone);
+            var utcTime = _service.ConvertUserDateTimeToUtc(dateTime, owner.Timezone);
             if (utcTime < DateTime.UtcNow)
             {
                 utcTime = utcTime.AddDays(1);
@@ -524,10 +524,10 @@ namespace MiraBot.Miraminders
             if (hasDayOfWeek)
             {
                 int daysFromNow = (int)specifiedDay - (int)userDay;
-                reminder.DateTime = _service.ConvertUtcToUserTime(TimeOnly.FromDateTime(DateTime.UtcNow), owner.Timezone).AddDays(daysFromNow);
+                reminder.DateTime = _service.ConvertUtcDateTimeToUser(DateTime.UtcNow, owner.Timezone).AddDays(daysFromNow);
                 if (int.TryParse(completeInput[index - 1], out int timeFrameValue))
                 {
-                    if (reminder.DateTime < _service.ConvertUtcToUserTime(TimeOnly.FromDateTime(DateTime.UtcNow), owner.Timezone))
+                    if (reminder.DateTime < _service.ConvertUtcDateTimeToUser(DateTime.UtcNow, owner.Timezone))
                     {
                         reminder.DateTime = reminder.DateTime.AddDays(7);
                     }
@@ -542,7 +542,7 @@ namespace MiraBot.Miraminders
                 }
                 else if (completeInput[index - 1].Equals("other", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (reminder.DateTime < _service.ConvertUtcToUserTime(TimeOnly.FromDateTime(DateTime.UtcNow), owner.Timezone))
+                    if (reminder.DateTime < _service.ConvertUtcDateTimeToUser(DateTime.UtcNow, owner.Timezone))
                     {
                         reminder.DateTime = reminder.DateTime.AddDays(7);
                     }
@@ -552,7 +552,7 @@ namespace MiraBot.Miraminders
                 }
                 else
                 {
-                    if (reminder.DateTime < _service.ConvertUtcToUserTime(TimeOnly.FromDateTime(DateTime.UtcNow), owner.Timezone))
+                    if (reminder.DateTime < _service.ConvertUtcDateTimeToUser(DateTime.UtcNow, owner.Timezone))
                     {
                         reminder.DateTime = reminder.DateTime.AddDays(7);
                     }

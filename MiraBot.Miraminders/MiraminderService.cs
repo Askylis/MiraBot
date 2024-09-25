@@ -61,22 +61,17 @@ namespace MiraBot.Miraminders
         }
 
 
-        public DateTime ConvertUserTimeToUtc(TimeOnly requestedTime, string userTimezoneId)
+        public DateTime ConvertUserDateTimeToUtc(DateTime requestedDateTime, string userTimezoneId)
         {
             var userTimezone = TimeZoneInfo.FindSystemTimeZoneById(userTimezoneId);
-            var userDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(_dateTimeProvider.UtcNow, userTimezone));
-            var dateTime = userDate.ToDateTime(TimeOnly.MinValue).Add(requestedTime.ToTimeSpan());
-            var utcTime = TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(dateTime, DateTimeKind.Unspecified), userTimezone);
-            return utcTime;
+            return TimeZoneInfo.ConvertTimeToUtc(requestedDateTime, userTimezone);
         }
 
 
-        public DateTime ConvertUtcToUserTime(TimeOnly utcTime, string userTimezoneId)
+        public DateTime ConvertUtcDateTimeToUser(DateTime utcDateTime, string userTimezoneId)
         {
             var userTimezone = TimeZoneInfo.FindSystemTimeZoneById(userTimezoneId);
-            var utcDateTime = _dateTimeProvider.Today.Add(utcTime.ToTimeSpan());
-            var userTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utcDateTime, DateTimeKind.Unspecified), userTimezone);
-            return userTime;
+            return TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, userTimezone);
         }
 
 
@@ -90,7 +85,7 @@ namespace MiraBot.Miraminders
             foreach (var reminder in reminders)
             {
                 string currentReminder;
-                var userTime = TimeOnly.FromDateTime(ConvertUtcToUserTime(TimeOnly.FromDateTime(reminder.DateTime), owner.Timezone));
+                var userTime = TimeOnly.FromDateTime(ConvertUtcDateTimeToUser(reminder.DateTime, owner.Timezone));
                 var userDate = DateOnly.FromDateTime(reminder.DateTime);
                 var userDateTime = userDate.ToDateTime(userTime);
                 currentReminder = $"{counter}. **\"{reminder.Message}\"** is set for: **{userDateTime}**\n\n";
