@@ -4,9 +4,9 @@ namespace MiraBot.Miraminders
 {
     public class UsersRefreshService : BackgroundService
     {
-        private readonly UsersCache _cache;
+        private readonly IUsersCache _cache;
 
-        public UsersRefreshService(UsersCache cache)
+        public UsersRefreshService(IUsersCache cache)
         {
             _cache = cache;
         }

@@ -1,4 +1,4 @@
-﻿namespace MiraBot.Options
+﻿namespace MiraBot.Common
 {
     public sealed class MiraOptions
     {

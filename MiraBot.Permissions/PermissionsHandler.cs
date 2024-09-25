@@ -8,9 +8,9 @@ namespace MiraBot.Permissions
     public class PermissionsHandler
     {
         private readonly PermissionsRepository _repository;
-        private readonly UsersRepository _usersRepository;
+        private readonly IUsersRepository _usersRepository;
 
-        public PermissionsHandler(PermissionsRepository permissionsRepository, UsersRepository usersRepository)
+        public PermissionsHandler(PermissionsRepository permissionsRepository, IUsersRepository usersRepository)
         {
             _repository = permissionsRepository;
             _usersRepository = usersRepository;

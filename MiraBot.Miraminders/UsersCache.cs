@@ -4,14 +4,14 @@ using MiraBot.DataAccess.Repositories;
 
 namespace MiraBot.Miraminders
 {
-    public class UsersCache
+    public class UsersCache : IUsersCache
     {
         private static List<UserNameAndId> _cache = new();
 
-        private readonly UsersRepository _repository;
+        private readonly IUsersRepository _repository;
         private readonly ILogger<UsersCache> _logger;
 
-        public UsersCache(ILogger<UsersCache> logger, UsersRepository usersRepository)
+        public UsersCache(ILogger<UsersCache> logger, IUsersRepository usersRepository)
         {
             _logger = logger;
             _repository = usersRepository;

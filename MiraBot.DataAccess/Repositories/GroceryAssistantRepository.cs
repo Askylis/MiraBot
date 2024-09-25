@@ -6,8 +6,8 @@ namespace MiraBot.DataAccess.Repositories
     public class GroceryAssistantRepository : IGroceryAssistantRepository
     {
         private readonly DatabaseOptions _databaseOptions;
-        private readonly UsersRepository _usersRepository;
-        public GroceryAssistantRepository(IOptions<DatabaseOptions> databaseOptions, UsersRepository usersRepository)
+        private readonly IUsersRepository _usersRepository;
+        public GroceryAssistantRepository(IOptions<DatabaseOptions> databaseOptions, IUsersRepository usersRepository)
         {
             _databaseOptions = databaseOptions.Value;
             _usersRepository = usersRepository;
