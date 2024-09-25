@@ -46,6 +46,11 @@ namespace MiraBot.Common
             return userChoice;
         }
 
+        public async Task AddNewUserAsync(User user)
+        {
+            await _usersRepository.AddNewUserAsync(user);
+        }
+
         public async Task SaveUserTimezoneAsync(User owner)
         {
             await SendTimezoneFileAsync();

@@ -59,10 +59,15 @@ namespace MiraBot.Modules
                 await RespondAsync("You've already registered with me, so you can't use this command again.");
                 return;
             }
-
-            // get timezone
-            // get date format (mm/dd vs dd/mm)
-            // direct user to use /help 
+            var newUser = new User
+            {
+                DiscordId = Context.User.Id,
+                UserName = Context.User.Username,
+            };
+            await _helpers.AddNewUserAsync(newUser);
+            var user = await _helpers.GetUserByDiscordIdAsync(Context.User.Id);
+            await _helpers.SaveUserTimezoneAsync(user);
+            await ReplyAsync("Got all the information I need! You can use `/help` to view all available commands.");
         }
 
         [SlashCommand("bugreport", "Report a bug to Mira's developer.")]
