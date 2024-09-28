@@ -120,7 +120,7 @@ namespace MiraBot.Miraminders.UnitTests
         {
             // Arrange
             var service = new MiraminderService(
-                _remindersRepository.Object, _logger, 
+                _remindersRepository.Object, _logger,
                 _usersRepository.Object);
             var originalDateTime = new DateTime(2024, 8, 15, 0, 0, 0, DateTimeKind.Utc);
             var ownerId = 1;

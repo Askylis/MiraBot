@@ -24,7 +24,7 @@ namespace MiraBot.Modules
         internal const int maxRecipeLength = 65535;
         private static readonly char[] separator = ['\n'];
 
-        public GroceryAssistantModule(GroceryAssistant groceryAssistant, InteractiveService interactiveService, 
+        public GroceryAssistantModule(GroceryAssistant groceryAssistant, InteractiveService interactiveService,
             ModuleHelpers moduleHelpers, UserCommunications comms)
         {
             _groceryAssistant = groceryAssistant;
@@ -36,7 +36,7 @@ namespace MiraBot.Modules
         [SlashCommand("gaadd", "Add a new meal and associated ingredients.")]
         public async Task AddMealAsync()
         {
-            if (! await _helpers.UserExistsAsync(Context.User.Id))
+            if (!await _helpers.UserExistsAsync(Context.User.Id))
             {
                 await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
                 return;
@@ -174,7 +174,7 @@ namespace MiraBot.Modules
                     ingNames = await AddIngredientsAsync();
                     foreach (var ing in ingNames)
                     {
-                        selectedMeal.Ingredients.Add(new Ingredient { Name = ing, OwnerId = selectedMeal.OwnerId});
+                        selectedMeal.Ingredients.Add(new Ingredient { Name = ing, OwnerId = selectedMeal.OwnerId });
                     }
                     await _groceryAssistant.EditMealAsync(selectedMeal);
                     break;
@@ -474,7 +474,7 @@ namespace MiraBot.Modules
             }
 
             var meals = await _groceryAssistant.GetAllMealsAsync(Context.User.Id);
-            var mealsWithRecipes = meals.Where(m =>  m.Recipe != null).ToList();
+            var mealsWithRecipes = meals.Where(m => m.Recipe != null).ToList();
             if (mealsWithRecipes.Count == 0)
             {
                 await RespondAsync("You have no saved meals that have recipes attached to them.");
@@ -493,10 +493,10 @@ namespace MiraBot.Modules
             {
                 return;
             }
-            if (! await _comms.UserCanSendMessageAsync(recipient, owner, "recipe"))
+            if (!await _comms.UserCanSendMessageAsync(recipient, owner, "recipe"))
             {
                 await ReplyAsync("Sorry, I can't share this recipe with the intended recipient. They might not have you whitelisted, or they might have blacklisted you.");
-                return; 
+                return;
             }
             await _comms.SendRecipeAsync(recipient, owner, mealsWithRecipes[index]);
             await ReplyAsync($"Okay, sent that recipe to {recipient.UserName}!");
@@ -504,7 +504,7 @@ namespace MiraBot.Modules
 
         public async Task<bool?> UserWantsToAddRecipe(string question, ulong recipientDiscordId)
         {
-            return await _comms.UserWantsAsync(question, recipientDiscordId); 
+            return await _comms.UserWantsAsync(question, recipientDiscordId);
         }
 
 

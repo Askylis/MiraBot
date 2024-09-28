@@ -2,9 +2,9 @@
 using Discord.Interactions;
 using Discord.Rest;
 using Discord.WebSocket;
-using MiraBot.DataAccess;
-using MiraBot.Common;
 using Fergun.Interactive;
+using MiraBot.Common;
+using MiraBot.DataAccess;
 
 namespace MiraBot.Communication
 {

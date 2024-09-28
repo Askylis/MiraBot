@@ -5,8 +5,8 @@ namespace MiraBot.Permissions
 {
     public class NotBannedAttribute : PreconditionAttribute
     {
-        public NotBannedAttribute() 
-        { 
+        public NotBannedAttribute()
+        {
 
         }
 

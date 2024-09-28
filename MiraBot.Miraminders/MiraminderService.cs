@@ -11,7 +11,7 @@ namespace MiraBot.Miraminders
         private readonly IUsersRepository _usersRepository;
         private readonly ILogger<MiraminderService> _logger;
 
-        public MiraminderService(IMiramindersRepository repository, ILogger<MiraminderService> logger, 
+        public MiraminderService(IMiramindersRepository repository, ILogger<MiraminderService> logger,
             IUsersRepository usersRepository)
         {
             _remindersRepository = repository;

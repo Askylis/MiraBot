@@ -393,7 +393,7 @@ namespace MiraBot.Miraminders
                 }
                 index++;
             }
-            
+
 
             if (reminder.IsRecurring)
             {
@@ -422,7 +422,7 @@ namespace MiraBot.Miraminders
                         reminder.DateTime = reminder.DateTime.AddYears(1);
                     }
                     reminder.InYears = 1;
-                } 
+                }
 
                 else if (numericDateResult is not null)
                 {

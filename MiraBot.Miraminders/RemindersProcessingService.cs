@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Hosting;
+using MiraBot.Common;
 using MiraBot.Communication;
 using MiraBot.DataAccess;
-using MiraBot.Common;
 
 namespace MiraBot.Miraminders
 {

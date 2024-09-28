@@ -18,7 +18,7 @@ namespace MiraBot.Permissions
 
         public async Task AddNewPermissionAsync(string name, string description)
         {
-            var permission = new Permission { Name = name, Description = description};
+            var permission = new Permission { Name = name, Description = description };
             await _repository.AddNewPermissionAsync(permission);
         }
 
@@ -82,7 +82,7 @@ namespace MiraBot.Permissions
         {
             var sb = new StringBuilder();
             int counter = 1;
-            
+
             foreach (var permission in user.Permissions)
             {
                 sb.AppendLine($"{counter}. Permission name: **{permission.Name}** with permission ID **{permission.PermissionId}**");

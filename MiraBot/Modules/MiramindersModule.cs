@@ -54,7 +54,7 @@ namespace MiraBot.Modules
                     return;
                 }
             }
-            
+
             var owner = await _helpers.GetUserByNameAsync(Context.User.Username);
             if (owner.Timezone is null)
             {
