@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.Interactions;
+using Fergun.Interactive;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MiraBot.Common;
@@ -14,16 +15,19 @@ namespace MiraBot.Modules
     {
         private readonly CommandService _commandService;
         private readonly InteractionService _interactionService;
+        private readonly InteractiveService _interactive;
         private readonly IOptions<MiraOptions> _options;
         private readonly ModuleHelpers _helpers;
         private const int maxDescriptionLength = 250;
         private const int maxReproduceLength = 500;
-        public GeneralModule(InteractionService interactionService, IOptions<MiraOptions> options, CommandService service, ModuleHelpers helpers)
+        public GeneralModule(InteractionService interactionService, IOptions<MiraOptions> options, CommandService service, ModuleHelpers helpers,
+            InteractiveService interactive)
         {
             _interactionService = interactionService;
             _options = options;
             _commandService = service;
             _helpers = helpers;
+            _interactive = interactive;
         }
 
         [SlashCommand("help", "Displays all available Mira functionality and provides information on how to use it all.")]
@@ -71,7 +75,7 @@ namespace MiraBot.Modules
             };
             await _helpers.AddNewUserAsync(newUser);
             var user = await _helpers.GetUserByDiscordIdAsync(Context.User.Id);
-            await _helpers.SaveUserTimezoneAsync(user);
+            await SaveUserTimezoneAsync(user);
             await ReplyAsync("Got all the information I need! You can use `/help` to view all available commands.");
         }
 
@@ -145,6 +149,106 @@ namespace MiraBot.Modules
             }
             await _helpers.WhitelistUserAsync(Context.User.Id, user.UserId);
             await RespondAsync($"{user.UserName} has been whitelisted. They will now be able to send you things through me.");
+        }
+
+
+        public async Task SaveUserTimezoneAsync(User owner)
+        {
+            await SendTimezoneFileAsync();
+
+            while (true)
+            {
+                await ReplyAsync("Copy your timezone exactly how it's listed in this file, and send it to me so I can register your timezone!");
+
+                var input = await _interactive.NextMessageAsync(
+                    x => x.Author.Id == Context.User.Id && x.Channel.Id == Context.Channel.Id,
+                    timeout: TimeSpan.FromMinutes(2));
+
+                if (!input.IsSuccess)
+                {
+                    continue;
+                }
+
+                var timezone = input.Value.Content.Trim();
+
+                if (!IsValidTimezone(timezone))
+                {
+                    await ReplyAsync("The timezone you entered isn't valid! Make sure to copy your timezone exactly as it's listed in the file I sent.");
+                    continue;
+                }
+
+                if (owner.UsesAmericanDateFormat is null)
+                {
+                    await ReplyAsync("How would you write out the date \"August 30th\"?");
+                    var options = new List<string> { "8/30", "30/8" };
+                    await _helpers.GenerateSelectMenuAsync(options,
+                        "How would you write out the date \"August 30th\"?",
+                        "select-menu",
+                        "Select this option",
+                        Context
+                        );
+                    var selection = ModuleHelpers.result;
+                    ModuleHelpers.result = -1;
+                    bool isAmerican = (selection == 0);
+
+                    await AddDateFormatToUserAsync(owner.DiscordId, isAmerican);
+                }
+
+                await AddTimezoneToUserAsync(Context.User.Id, timezone);
+                break;
+            }
+        }
+
+        public static bool IsValidTimezone(string timezoneId)
+        {
+            return TimeZoneInfo
+                .GetSystemTimeZones()
+                .Any(t => t.Id.Equals(timezoneId, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public async Task SendTimezoneFileAsync()
+        {
+            string fileName;
+            try
+            {
+                fileName = CreateTimezoneFile();
+            }
+            catch (Exception ex)
+            {
+                await ReplyAsync("I was unable to create the timezone file. Please seek assistance from the developer.");
+                return;
+            }
+
+            await FollowupWithFileAsync(fileName);
+        }
+
+        public async Task AddTimezoneToUserAsync(ulong discordId, string timezoneId)
+        {
+            var user = await _helpers.GetUserByDiscordIdAsync(discordId)
+                .ConfigureAwait(false);
+
+            if (user is not null)
+            {
+                user.Timezone = timezoneId;
+                await _helpers.ModifyUserAsync(user);
+            }
+        }
+
+        public async Task AddDateFormatToUserAsync(ulong discordId, bool isAmerican)
+        {
+            var user = await _helpers.GetUserByDiscordIdAsync(discordId)
+                .ConfigureAwait(false);
+
+            user.UsesAmericanDateFormat = isAmerican;
+            await _helpers.ModifyUserAsync(user);
+        }
+
+        public static string CreateTimezoneFile()
+        {
+            var fileName = Path.ChangeExtension(Path.GetRandomFileName(), ".txt");
+            var timeZones = TimeZoneInfo.GetSystemTimeZones();
+            File.WriteAllLines(fileName, timeZones.Select(t => t.Id).ToArray());
+            return fileName;
         }
     }
 }
