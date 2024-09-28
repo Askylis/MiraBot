@@ -2,11 +2,10 @@
 using Discord.Commands;
 using Discord.Interactions;
 using Microsoft.Extensions.Options;
-using MiraBot.Common;
-using MiraBot.Options;
-using MiraBot.Permissions;
-using MiraBot.DataAccess;
 using Microsoft.IdentityModel.Tokens;
+using MiraBot.Common;
+using MiraBot.DataAccess;
+using MiraBot.Permissions;
 
 namespace MiraBot.Modules
 {

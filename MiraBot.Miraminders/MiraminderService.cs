@@ -1,6 +1,4 @@
-﻿using Discord;
-using Microsoft.Extensions.Logging;
-using MiraBot.Common;
+﻿using Microsoft.Extensions.Logging;
 using MiraBot.DataAccess;
 using MiraBot.DataAccess.Repositories;
 using System.Text;

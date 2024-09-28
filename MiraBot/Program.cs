@@ -1,20 +1,19 @@
-﻿using Discord.Interactions;
+﻿using Discord.Commands;
+using Discord.Interactions;
 using Discord.WebSocket;
-using MiraBot.Options;
-using MiraBot.Services;
+using Fergun.Interactive;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using MiraBot.Common;
+using MiraBot.Communication;
 using MiraBot.DataAccess;
 using MiraBot.DataAccess.Repositories;
 using MiraBot.GroceryAssistance;
 using MiraBot.Miraminders;
+using MiraBot.Options;
 using MiraBot.Permissions;
-using Fergun.Interactive;
-using MiraBot.Modules;
-using MiraBot.Common;
-using Discord.Commands;
-using MiraBot.Communication;
+using MiraBot.Services;
 
 
 var builder = Host.CreateApplicationBuilder(args);

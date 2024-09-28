@@ -1,8 +1,6 @@
 ﻿using Discord.Interactions;
 using Discord.WebSocket;
 using MiraBot.DataAccess.Repositories;
-using MiraBot.Communication;
-using MiraBot.GroceryAssistance;
 
 namespace MiraBot.Modules
 {
@@ -10,13 +8,11 @@ namespace MiraBot.Modules
     {
         private readonly IGroceryAssistantRepository _gaRepository;
         private readonly IUsersRepository _usersRepository;
-        private readonly GroceryAssistant _ga;
 
-        public ButtonHandler(IGroceryAssistantRepository repository, IUsersRepository usersRepository, GroceryAssistant ga)
+        public ButtonHandler(IGroceryAssistantRepository repository, IUsersRepository usersRepository)
         {
             _gaRepository = repository;
             _usersRepository = usersRepository;
-            _ga = ga;
         }
 
         [ComponentInteraction("yes_*")]

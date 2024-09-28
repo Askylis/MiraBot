@@ -22,7 +22,7 @@ namespace MiraBot.Modules
         internal const int selectMenuLimit = 24;
         internal const int maxIngredientLength = 1500;
         internal const int maxRecipeLength = 65535;
-        private static readonly char[] separator = new[] { '\n' };
+        private static readonly char[] separator = ['\n'];
 
         public GroceryAssistantModule(GroceryAssistant groceryAssistant, InteractiveService interactiveService, 
             ModuleHelpers moduleHelpers, UserCommunications comms)

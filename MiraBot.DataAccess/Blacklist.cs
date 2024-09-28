@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace MiraBot.DataAccess;
+﻿namespace MiraBot.DataAccess;
 
 public partial class Blacklist
 {

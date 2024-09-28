@@ -1,5 +1,4 @@
-﻿
-namespace MiraBot.Miraminders
+﻿namespace MiraBot.Miraminders
 {
     internal enum TimeFrame
     {
