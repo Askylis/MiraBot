@@ -15,35 +15,31 @@ namespace MiraBot.Miraminders
         private List<string> completeInput;
         private static readonly string[] keywords = ["in", "on", "at", "every", "to", "that", "and", "from", "now", "a", "an", "next"];
         private readonly IRemindersCache _reminderCache;
-        private readonly IUsersCache _userCache;
         private readonly IOptions<MiraOptions> _options;
         private readonly ModuleHelpers _helpers;
         private readonly UserCommunications _comms;
         public ReminderHandler(
             MiraminderService service,
             IRemindersCache cache,
-            IUsersCache usersCache,
             IOptions<MiraOptions> options,
             ModuleHelpers helpers,
             UserCommunications comms)
         {
             _service = service;
             _reminderCache = cache;
-            _userCache = usersCache;
             _options = options;
             _helpers = helpers;
             _comms = comms;
         }
 
-        public async Task<string> ParseReminderAsync(string input, ulong ownerId, SocketInteractionContext ctx)
+        public async Task<string> ParseReminderAsync(string input, ulong ownerId, int recipientUserId, SocketInteractionContext ctx)
         {
             // convert "my" and "me" in reminder message to "your" and "you"?
             // splits the input into a list for easier management
             completeInput = input.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
 
             var owner = await _helpers.GetUserByDiscordIdAsync(ownerId);
-            var recipientId = GetRecipientIdAsync(owner.UserId);
-            var recipient = await _helpers.GetUserByUserIdAsync(recipientId);
+            var recipient = await _helpers.GetUserByUserIdAsync(recipientUserId);
 
             if (owner.Reminders.Count >= _options.Value.MaxReminderCount && owner.UserName != _options.Value.DevUserName)
             {
@@ -54,7 +50,7 @@ namespace MiraBot.Miraminders
             var reminder = new Reminder
             {
                 OwnerId = owner.UserId,
-                RecipientId = GetRecipientIdAsync(owner.UserId)
+                RecipientId = recipientUserId
             };
 
             if (! await _comms.UserCanSendMessageAsync(recipient, owner, "reminder"))
@@ -188,32 +184,6 @@ namespace MiraBot.Miraminders
             }
 
             return dateTime != DateTime.MinValue ? dateTime : null;
-        }
-
-        private int GetRecipientIdAsync(int ownerId)
-        {
-            // check to see if the first word is "me". If it is, then it's faster because it doesn't require using the database
-            // for every word in the reminder input.
-            if (completeInput[0].Equals("me", StringComparison.OrdinalIgnoreCase))
-            {
-                completeInput.RemoveAt(0);
-                return ownerId;
-            }
-            // if the first word isn't "me", then run each word in the reminder input against the users cache to see if it contains a user
-
-            int index = 0;
-            foreach (var word in completeInput)
-            {
-                var user = _userCache.GetUserByName(word);
-                if (user is not null)
-                {
-                    completeInput.RemoveAt(index);
-                    return user.UserId;
-                }
-                index++;
-            }
-            // if neither is true, then return the ownerId since a recipient couldn't be found
-            return ownerId;
         }
 
 

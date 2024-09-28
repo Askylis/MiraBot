@@ -30,22 +30,38 @@ namespace MiraBot.Modules
 
 
         [SlashCommand("remind", "Set a new reminder")]
-        public async Task GetNewReminderAsync(string input)
+        public async Task GetNewReminderAsync(string username, string input)
         {
+            User? recipient;
             await RespondAsync("Gimme a sec to look at this...");
             if (!await _helpers.UserExistsAsync(Context.User.Id))
             {
                 await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
                 return;
             }
+
             await _helpers.UpdateUsernameIfChangedAsync(Context);
+            if (username.Equals("me", StringComparison.OrdinalIgnoreCase))
+            {
+                recipient = await _helpers.GetUserByDiscordIdAsync(Context.User.Id);
+            }
+            else
+            {
+                recipient = await _helpers.GetUserByNameAsync(username);
+                if (recipient is null)
+                {
+                    await ReplyAsync($"I couldn't find anyone with the username \"{username}\". Please make sure you input the correct username, and try again!");
+                    return;
+                }
+            }
+            
             var owner = await _helpers.GetUserByNameAsync(Context.User.Username);
             if (owner.Timezone is null)
             {
                 await _helpers.SaveUserTimezoneAsync(owner);
             }
             var handler = _serviceProvider.GetRequiredService<ReminderHandler>();
-            await ReplyAsync(await handler.ParseReminderAsync(input, Context.User.Id, Context));
+            await ReplyAsync(await handler.ParseReminderAsync(input, Context.User.Id, recipient.UserId, Context));
         }
 
 

@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MiraBot.DataAccess.Repositories
+﻿namespace MiraBot.DataAccess.Repositories
 {
     public interface IUsersRepository
     {
@@ -12,7 +6,6 @@ namespace MiraBot.DataAccess.Repositories
         Task<User?> GetUserByNameAsync(string userName);
         Task<User?> GetUserByDiscordIdAsync(ulong discordId);
         Task<User?> GetUserByUserIdAsync(int userId);
-        Task<List<UserNameAndId>> GetUserNamesAndIdsAsync();
         Task ModifyUserAsync(User user);
         Task UpdatePermissionsAsync(User user, Permission permission);
         Task<bool> UserExistsAsync(ulong discordId);
