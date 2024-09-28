@@ -99,7 +99,7 @@ namespace MiraBot.Modules
                 return;
             }
 
-            await Context.Channel.SendMessageAsync(_handler.ListPermissionsAsync(recipient));
+            await Context.Channel.SendMessageAsync(PermissionsHandler.ListPermissionsAsync(recipient));
         }
 
         [Command("bugs")]

@@ -45,46 +45,6 @@ namespace MiraBot.Common
             return userChoice;
         }
 
-        //public async Task<bool?> UserWantsAsync(string question, ulong recipientDiscordId)
-        //{
-        //    int counter = 0;
-        //    int maxAttempts = 3;
-        //    await ctx.Channel.SendMessageAsync($"{question} Y/N");
-
-        //    while (counter < maxAttempts)
-        //    {
-        //        var response = await _interactive.NextMessageAsync(
-        //                x => x.Author.Id == ctx.User.Id && x.Channel.Id == ctx.Channel.Id,
-        //                timeout: TimeSpan.FromMinutes(2));
-
-        //        if (!response.IsSuccess)
-        //        {
-        //            counter++;
-        //            await ctx.Channel.SendMessageAsync($"You did not respond in time. Please try again. You have {maxAttempts - counter} more attempts.");
-        //            continue;
-        //        }
-
-        //        if (response.Value.Content.Equals("y", StringComparison.OrdinalIgnoreCase))
-        //        {
-        //            return true;
-        //        }
-        //        else if (response.Value.Content.Equals("n", StringComparison.OrdinalIgnoreCase))
-        //        {
-        //            return false;
-        //        }
-        //        else
-        //        {
-        //            counter++;
-        //            if (counter < maxAttempts)
-        //            {
-        //                await ctx.Channel.SendMessageAsync($"You did not enter a valid response. Please try again. You have {maxAttempts - counter} more attempts.");
-        //            }
-        //        }
-        //    }
-
-        //    return null;
-        //}
-
         public async Task AddNewUserAsync(User user)
         {
             await _usersRepository.AddNewUserAsync(user);
@@ -177,7 +137,7 @@ namespace MiraBot.Common
 
             else
             {
-                await SendLongMessageAsync(items.Select(messageSelector).ToList());
+                await SendLongMessageAsync(items.Select(messageSelector).ToList(), ctx);
                 selection = await GetValidNumberAsync(0, items.Count, Context);
                 selection--;
             }
@@ -222,11 +182,6 @@ namespace MiraBot.Common
             await msg.DeleteAsync();
         }
 
-        public async Task GenerateModalAsync()
-        {
-
-        }
-
         public async Task<string?> GetResponseFromUserAsync(int maxLength, SocketInteractionContext context)
         {
             bool isValid = false;
@@ -255,11 +210,12 @@ namespace MiraBot.Common
             return input;
         }
 
-        public async Task SendLongMessageAsync(List<string> messages)
+        public static async Task SendLongMessageAsync(List<string> messages, SocketInteractionContext context)
         {
+            int counter = 1;
             foreach (var message in messages)
             {
-                await ReplyAsync(message);
+                await context.Channel.SendMessageAsync($"{counter}. **\"{message}\"**");
             }
         }
 

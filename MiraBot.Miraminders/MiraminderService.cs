@@ -57,14 +57,14 @@ namespace MiraBot.Miraminders
         }
 
 
-        public DateTime ConvertUserDateTimeToUtc(DateTime requestedDateTime, string userTimezoneId)
+        public static DateTime ConvertUserDateTimeToUtc(DateTime requestedDateTime, string userTimezoneId)
         {
             var userTimezone = TimeZoneInfo.FindSystemTimeZoneById(userTimezoneId);
             return TimeZoneInfo.ConvertTimeToUtc(requestedDateTime, userTimezone);
         }
 
 
-        public DateTime ConvertUtcDateTimeToUser(DateTime utcDateTime, string userTimezoneId)
+        public static DateTime ConvertUtcDateTimeToUser(DateTime utcDateTime, string userTimezoneId)
         {
             var userTimezone = TimeZoneInfo.FindSystemTimeZoneById(userTimezoneId);
             return TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, userTimezone);

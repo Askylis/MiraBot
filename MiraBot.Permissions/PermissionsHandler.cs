@@ -65,10 +65,7 @@ namespace MiraBot.Permissions
 
         public async Task<string> ListAllAsync(List<Permission> permissions = null)
         {
-            if (permissions is null)
-            {
-                permissions = await _repository.GetAllAsync();
-            }
+            permissions ??= await _repository.GetAllAsync();
 
             var sb = new StringBuilder();
             int counter = 1;
@@ -81,7 +78,7 @@ namespace MiraBot.Permissions
             return sb.ToString();
         }
 
-        public string ListPermissionsAsync(User user)
+        public static string ListPermissionsAsync(User user)
         {
             var sb = new StringBuilder();
             int counter = 1;

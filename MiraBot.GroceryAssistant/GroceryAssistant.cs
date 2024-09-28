@@ -48,7 +48,7 @@ namespace MiraBot.GroceryAssistance
         }
 
 
-        public IEnumerable<string> TrimIngredients(string ingredientsInput)
+        public static IEnumerable<string> TrimIngredients(string ingredientsInput)
         {
             string[] ingredients = ingredientsInput.Split(",");
             var trimmedIngredients = ingredients.Select(i => i.Trim());
@@ -106,7 +106,7 @@ namespace MiraBot.GroceryAssistance
         }
 
 
-        public bool IsValidName(string name, int maxLength)
+        public static bool IsValidName(string name, int maxLength)
         {
             return name.Length <= maxLength;
         }
@@ -171,7 +171,7 @@ namespace MiraBot.GroceryAssistance
             return null;
         }
 
-        public string RemoveCurlyBraces(string input)
+        public static string RemoveCurlyBraces(string input)
         {
             return input.Split('{')[0].Trim();
         }
@@ -188,7 +188,7 @@ namespace MiraBot.GroceryAssistance
             return meals;
         }
 
-        public async Task<string> DownloadFileContentAsync(string url)
+        public static async Task<string> DownloadFileContentAsync(string url)
         {
             using (var httpClient = new HttpClient())
             {
@@ -197,7 +197,7 @@ namespace MiraBot.GroceryAssistance
         }
 
 
-        public List<string> SendLongMessage(List<string>? input = null, List<Meal>? meals = null, bool sendIngredients = false)
+        public static List<string> SendLongMessage(List<string>? input = null, List<Meal>? meals = null, bool sendIngredients = false)
         {
             var response = new StringBuilder();
             var messages = new List<string>();
@@ -251,7 +251,7 @@ namespace MiraBot.GroceryAssistance
         }
 
 
-        public void WriteSelectionFile(string filePath, IEnumerable<Meal> results)
+        public static void WriteSelectionFile(string filePath, IEnumerable<Meal> results)
         {
             var ingredientsList = new List<string>();
             using (StreamWriter writer = new(filePath))
@@ -277,7 +277,7 @@ namespace MiraBot.GroceryAssistance
             }
         }
 
-        public void WriteListFile(string filePath, IEnumerable<Meal> results)
+        public static void WriteListFile(string filePath, IEnumerable<Meal> results)
         {
             int counter = 1;
             using (StreamWriter writer = new(filePath))
@@ -291,7 +291,7 @@ namespace MiraBot.GroceryAssistance
             }
         }
 
-        public void WriteRecipeFile(string filePath, string recipe)
+        public static void WriteRecipeFile(string filePath, string recipe)
         {
             using (StreamWriter writer = new(filePath))
             {

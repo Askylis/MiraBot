@@ -29,7 +29,7 @@ namespace MiraBot.Modules
         }
 
 
-        [SlashCommand("remind", "Set a new reminder")]
+        [SlashCommand("remind", "Set a new reminder. Type your username or \"me\" to set for yourself.")]
         public async Task GetNewReminderAsync(string username, string input)
         {
             User? recipient;
@@ -61,7 +61,7 @@ namespace MiraBot.Modules
                 await _helpers.SaveUserTimezoneAsync(owner);
             }
             var handler = _serviceProvider.GetRequiredService<ReminderHandler>();
-            await ReplyAsync(await handler.ParseReminderAsync(input, Context.User.Id, recipient.UserId, Context));
+            await ReplyAsync(await handler.ParseReminderAsync(input, Context.User.Id, recipient.UserId));
         }
 
 
@@ -126,7 +126,7 @@ namespace MiraBot.Modules
                 await ReplyAsync("You don't have any active reminders.");
                 return;
             }
-            await _helpers.SendLongMessageAsync(reminders.Select(r => r.Message).ToList());
+            await ModuleHelpers.SendLongMessageAsync(reminders.Select(r => r.Message).ToList(), Context);
         }
 
 
@@ -143,26 +143,21 @@ namespace MiraBot.Modules
 
             var user = await _helpers.GetUserByDiscordIdAsync(Context.User.Id);
             var reminders = _cache.GetCacheContentsByUser(user.UserId);
-            List<Reminder> matchingReminders = [];
             if (reminders.Count == 0)
             {
                 await ReplyAsync("It doesn't look like you have any active reminders!");
                 return;
             }
-            foreach (var reminder in reminders)
-            {
-                if (reminder.Message.Contains(word))
-                {
-                    matchingReminders.Add(reminder);
-                }
-            }
+
+            var matchingReminders = reminders.Where(r => r.Message.Contains(word)).ToList();
+
             if (matchingReminders.Count == 0)
             {
                 await ReplyAsync($"I couldn't find a reminder that contained \"{word}\".");
                 return;
             }
             await ReplyAsync($"I found {matchingReminders.Count} reminders!");
-            await _helpers.SendLongMessageAsync(reminders.Select(r => r.Message).ToList());
+            await ModuleHelpers.SendLongMessageAsync(reminders.Select(r => r.Message).ToList(), Context);
         }
     }
 }
