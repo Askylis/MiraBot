@@ -25,7 +25,7 @@ namespace MiraBot.Miraminders
             _toDelete.Clear();
             _cache.Clear();
             var reminders = await _repository.GetUpcomingRemindersAsync();
-            _logger.LogDebug("Number of active reminders: {remindersCount}", reminders.Count);
+            _logger.LogInformation("Number of active reminders: {remindersCount}", reminders.Count);
             _cache.AddRange(reminders);
         }
 

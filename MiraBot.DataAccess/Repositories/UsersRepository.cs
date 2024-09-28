@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using MiraBot.DataAccess.Exceptions;
 
 namespace MiraBot.DataAccess.Repositories
 {

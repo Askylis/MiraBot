@@ -2,6 +2,7 @@
 using Discord.Commands;
 using Discord.Interactions;
 using Fergun.Interactive;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MiraBot.Common;
@@ -18,16 +19,18 @@ namespace MiraBot.Modules
         private readonly InteractiveService _interactive;
         private readonly IOptions<MiraOptions> _options;
         private readonly ModuleHelpers _helpers;
+        private readonly ILogger<GeneralModule> _logger;
         private const int maxDescriptionLength = 250;
         private const int maxReproduceLength = 500;
         public GeneralModule(InteractionService interactionService, IOptions<MiraOptions> options, CommandService service, ModuleHelpers helpers,
-            InteractiveService interactive)
+            InteractiveService interactive, ILogger<GeneralModule> logger)
         {
             _interactionService = interactionService;
             _options = options;
             _commandService = service;
             _helpers = helpers;
             _interactive = interactive;
+            _logger = logger;
         }
 
         [SlashCommand("help", "Displays all available Mira functionality and provides information on how to use it all.")]
@@ -39,7 +42,6 @@ namespace MiraBot.Modules
                 return;
             }
             await _helpers.UpdateUsernameIfChangedAsync(Context);
-            // maybe update this later to provide more in-depth information about specific commands?
             var builder = new EmbedBuilder()
                 .WithTitle("Available Commands")
                 .WithColor(Color.Blue);
@@ -73,7 +75,17 @@ namespace MiraBot.Modules
                 DiscordId = Context.User.Id,
                 UserName = Context.User.Username,
             };
-            await _helpers.AddNewUserAsync(newUser);
+            try
+            {
+                await _helpers.AddNewUserAsync(newUser);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogCritical(ex, "Something went wrong adding new user {username}", newUser.UserName);
+                await ReplyAsync("Something went wrong while registering you. Please try again!");
+                return;
+            }
+            _logger.LogInformation("Added new user: {username}", newUser.UserName);
             var user = await _helpers.GetUserByDiscordIdAsync(Context.User.Id);
             await SaveUserTimezoneAsync(user);
             await ReplyAsync("Got all the information I need! You can use `/help` to view all available commands.");
@@ -117,8 +129,17 @@ namespace MiraBot.Modules
                 DateTime = DateTime.Now
             };
 
-            await _helpers.SaveBugAsync(report, Context.User.Id);
+            try
+            {
+                await _helpers.SaveBugAsync(report, Context.User.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogCritical(ex, "Something went wrong adding a new bug from {username}", user.UserName);
+                await ReplyAsync("Something went wrong while submitting that bug report. Please try again!");
+            }
             var bug = await _helpers.GetNewestBugAsync();
+            _logger.LogWarning("New {severity} bug report with bug ID {bugId} from {username}. Bug description: {description}", bug.Severity, bug.Id, user.UserName, bug.Description);
             await ReplyAsync("This bug report has been sent to the developer. Thank you!");
             var dm = await Context.Client.GetUserAsync(_options.Value.DevId);
             await dm.SendMessageAsync($"New **{severity} severity** bug report from **{user.UserName}**!\n**Bug description:**\n\n\"{description}\"\n\n**Steps to reproduce:**\n\n\"{reproduce}\".");
@@ -140,7 +161,17 @@ namespace MiraBot.Modules
                 await RespondAsync($"{username} has already been blacklisted.");
                 return;
             }
-            await _helpers.BlacklistUserAsync(Context.User.Id, user.UserId);
+            try
+            {
+                await _helpers.BlacklistUserAsync(Context.User.Id, user.UserId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogCritical(ex, "Something went wrong with {ownerUsername} blacklisting {username}.", user.UserName, owner.UserName);
+                await ReplyAsync("Something went wrong while trying to blacklist this user. Please try again!");
+                return;
+            }
+            _logger.LogInformation("{username} has blacklisted {username}.", owner.UserName, user.UserName);
             await RespondAsync($"{user.UserName} has been blacklisted. They will not be able to send you anything through me anymore.");
         }
 
@@ -159,10 +190,19 @@ namespace MiraBot.Modules
                 await RespondAsync($"{username} has already been whitelisted.");
                 return;
             }
-            await _helpers.WhitelistUserAsync(Context.User.Id, user.UserId);
+            try
+            {
+                await _helpers.WhitelistUserAsync(Context.User.Id, user.UserId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogCritical(ex, "Something went wrong with {username} whitelisting {username}.", user.UserName, owner.UserName);
+                await ReplyAsync("Something went wrong while trying to whitelist this user. Please try again!");
+                return;
+            }
+            _logger.LogInformation("{username} has whitelisted {username}.", owner.UserName, user.UserName);
             await RespondAsync($"{user.UserName} has been whitelisted. They will now be able to send you things through me.");
         }
-
 
         public async Task SaveUserTimezoneAsync(User owner)
         {
