@@ -1,10 +1,7 @@
-﻿using FluentAssertions;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using MiraBot.Common;
-using MiraBot.DataAccess;
 using MiraBot.DataAccess.Repositories;
 using Moq;
-using System.Globalization;
 
 namespace MiraBot.Miraminders.UnitTests
 {
@@ -14,7 +11,6 @@ namespace MiraBot.Miraminders.UnitTests
         private Mock<IMiramindersRepository> _remindersRepository;
         private Mock<UsersRepository> _usersRepository;
         private Mock<IDateTimeProvider> _dateTimeProvider;
-        private Mock<UsersCache> _usersCache;
         private readonly ulong _discordId = 1;
         private readonly int _userId = 5;
 

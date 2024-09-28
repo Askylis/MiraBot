@@ -1,6 +1,4 @@
-﻿using Discord;
-using Microsoft.Extensions.Logging;
-using MiraBot.Common;
+﻿using Microsoft.Extensions.Logging;
 using MiraBot.DataAccess;
 using MiraBot.DataAccess.Repositories;
 using System.Text;
@@ -12,16 +10,12 @@ namespace MiraBot.Miraminders
         private readonly IMiramindersRepository _remindersRepository;
         private readonly IUsersRepository _usersRepository;
         private readonly ILogger<MiraminderService> _logger;
-        private readonly IDateTimeProvider _dateTimeProvider;
-        private readonly IUsersCache _usersCache;
 
-        public MiraminderService(IMiramindersRepository repository, ILogger<MiraminderService> logger, 
-            IDateTimeProvider dateTimeProvider, IUsersCache usersCache, IUsersRepository usersRepository)
+        public MiraminderService(IMiramindersRepository repository, ILogger<MiraminderService> logger,
+            IUsersRepository usersRepository)
         {
             _remindersRepository = repository;
             _logger = logger;
-            _dateTimeProvider = dateTimeProvider;
-            _usersCache = usersCache;
             _usersRepository = usersRepository;
         }
 
@@ -61,19 +55,18 @@ namespace MiraBot.Miraminders
         }
 
 
-        public DateTime ConvertUserDateTimeToUtc(DateTime requestedDateTime, string userTimezoneId)
+        public static DateTime ConvertUserDateTimeToUtc(DateTime requestedDateTime, string userTimezoneId)
         {
             var userTimezone = TimeZoneInfo.FindSystemTimeZoneById(userTimezoneId);
             return TimeZoneInfo.ConvertTimeToUtc(requestedDateTime, userTimezone);
         }
 
 
-        public DateTime ConvertUtcDateTimeToUser(DateTime utcDateTime, string userTimezoneId)
+        public static DateTime ConvertUtcDateTimeToUser(DateTime utcDateTime, string userTimezoneId)
         {
             var userTimezone = TimeZoneInfo.FindSystemTimeZoneById(userTimezoneId);
             return TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, userTimezone);
         }
-
 
         public async Task<List<string>> SendLongMessage(List<Reminder> reminders)
         {

@@ -34,7 +34,7 @@ namespace MiraBot.Miraminders
             var reminders = _cache
                 .Where(r => r.DateTime < DateTime.UtcNow)
                 .OrderBy(r => r.DateTime);
-                
+
             if (reminders.Any())
             {
                 foreach (var reminder in reminders)

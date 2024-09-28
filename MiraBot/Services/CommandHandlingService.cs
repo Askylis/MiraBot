@@ -10,7 +10,7 @@ namespace MiraBot.Services
         private readonly DiscordSocketClient _client;
         private readonly CommandService _commands;
         private readonly IServiceProvider _services;
-        
+
         public CommandHandlingService(DiscordSocketClient client, CommandService commands,
             IServiceProvider services)
         {

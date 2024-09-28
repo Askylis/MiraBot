@@ -2,9 +2,9 @@
 using Discord.Interactions;
 using Discord.Rest;
 using Discord.WebSocket;
-using MiraBot.DataAccess;
-using MiraBot.Common;
 using Fergun.Interactive;
+using MiraBot.Common;
+using MiraBot.DataAccess;
 
 namespace MiraBot.Communication
 {
@@ -119,7 +119,7 @@ namespace MiraBot.Communication
             return false;
         }
 
-        public async Task AddButtonsAsync(RestDMChannel dm, int mealId, string text)
+        public static async Task AddButtonsAsync(RestDMChannel dm, int mealId, string text)
         {
             var builder = new ComponentBuilder()
                 .WithButton("Yes", $"yes_{mealId}")
@@ -136,7 +136,7 @@ namespace MiraBot.Communication
             await dm.SendFileAsync(path);
         }
 
-        public void WriteRecipeFile(string filePath, string recipe)
+        public static void WriteRecipeFile(string filePath, string recipe)
         {
             using (StreamWriter writer = new(filePath))
             {

@@ -14,7 +14,6 @@ namespace MiraBot.Miraminders.UnitTests
         private Mock<IMiramindersRepository> _remindersRepository;
         private Mock<IUsersRepository> _usersRepository;
         private Mock<IDateTimeProvider> _dateTimeProvider;
-        private Mock<IUsersCache> _usersCache;
         private readonly ulong _discordId = 1;
         private readonly int _userId = 5;
 
@@ -25,7 +24,6 @@ namespace MiraBot.Miraminders.UnitTests
             _remindersRepository = new Mock<IMiramindersRepository>();
             _usersRepository = new Mock<IUsersRepository>();
             _dateTimeProvider = new Mock<IDateTimeProvider>();
-            _usersCache = new Mock<IUsersCache>();
         }
 
         [Test]
@@ -35,7 +33,7 @@ namespace MiraBot.Miraminders.UnitTests
             // Arrange
             string timezone = "test";
             _usersRepository.Setup(r => r.GetUserByDiscordIdAsync(_discordId)).ReturnsAsync(new User { DiscordId = _discordId, Timezone = timezone });
-            var service = new MiraminderService(_remindersRepository.Object, _logger, _dateTimeProvider.Object, _usersCache.Object, _usersRepository.Object);
+            var service = new MiraminderService(_remindersRepository.Object, _logger, _usersRepository.Object);
 
             // Act
             var result = await service.GetUserTimeZoneAsync(_discordId);
@@ -51,7 +49,7 @@ namespace MiraBot.Miraminders.UnitTests
             // Arrange
             string? timezone = null;
             _usersRepository.Setup(r => r.GetUserByDiscordIdAsync(_discordId)).ReturnsAsync(new User { DiscordId = _discordId, Timezone = timezone });
-            var service = new MiraminderService(_remindersRepository.Object, _logger, _dateTimeProvider.Object, _usersCache.Object, _usersRepository.Object);
+            var service = new MiraminderService(_remindersRepository.Object, _logger, _usersRepository.Object);
 
             // Act
             var result = await service.GetUserTimeZoneAsync(_discordId);
@@ -65,7 +63,7 @@ namespace MiraBot.Miraminders.UnitTests
         public async Task AddReminder_OwnerAndRecipientAreSame_ReminderIsAdded()
         {
             // Arrange
-            var service = new MiraminderService(_remindersRepository.Object, _logger, _dateTimeProvider.Object, _usersCache.Object, _usersRepository.Object);
+            var service = new MiraminderService(_remindersRepository.Object, _logger, _usersRepository.Object);
             var message = "test";
             var date = new DateTime(2024, 8, 15, 0, 0, 0, DateTimeKind.Utc);
             var user = new User { DiscordId = _discordId, UserId = _userId, UserName = "test" };
@@ -84,7 +82,7 @@ namespace MiraBot.Miraminders.UnitTests
         public async Task AddReminder_OwnerIsNull_ExceptionIsThrown()
         {
             // Arrange 
-            var service = new MiraminderService(_remindersRepository.Object, _logger, _dateTimeProvider.Object, _usersCache.Object, _usersRepository.Object);
+            var service = new MiraminderService(_remindersRepository.Object, _logger, _usersRepository.Object);
             var message = "test";
             var date = new DateTime(2024, 8, 15, 0, 0, 0, DateTimeKind.Utc);
             var reminder = new Reminder { OwnerId = _userId, RecipientId = _userId, Message = message, DateTime = date };
@@ -102,7 +100,7 @@ namespace MiraBot.Miraminders.UnitTests
         public async Task AddReminder_OwnerAndRecipientAreDifferent_ReminderIsAdded()
         {
             // Arrange
-            var service = new MiraminderService(_remindersRepository.Object, _logger, _dateTimeProvider.Object, _usersCache.Object, _usersRepository.Object);
+            var service = new MiraminderService(_remindersRepository.Object, _logger, _usersRepository.Object);
             var message = "test";
             var date = new DateTime(2024, 8, 15, 0, 0, 0, DateTimeKind.Utc);
             var user = new User { DiscordId = _discordId, UserId = 2, UserName = "test" };
@@ -122,8 +120,8 @@ namespace MiraBot.Miraminders.UnitTests
         {
             // Arrange
             var service = new MiraminderService(
-                _remindersRepository.Object, _logger, 
-                _dateTimeProvider.Object, _usersCache.Object, _usersRepository.Object);
+                _remindersRepository.Object, _logger,
+                _usersRepository.Object);
             var originalDateTime = new DateTime(2024, 8, 15, 0, 0, 0, DateTimeKind.Utc);
             var ownerId = 1;
             var message = "test";
@@ -171,8 +169,6 @@ namespace MiraBot.Miraminders.UnitTests
         public void ConvertUserDateTimeToUtc_TimezoneIsValid_ReturnsUtcTime(string userTime, string timezone, string expected)
         {
             // Arrange
-            var service = new MiraminderService(_remindersRepository.Object, _logger, _dateTimeProvider.Object, _usersCache.Object, _usersRepository.Object);
-
             var utcNow = new DateTime(2024, 8, 17, 0, 0, 0, DateTimeKind.Utc);
             _dateTimeProvider.SetupGet(d => d.UtcNow).Returns(utcNow);
 
@@ -183,7 +179,7 @@ namespace MiraBot.Miraminders.UnitTests
                 DateTimeKind.Unspecified);
 
             // Act
-            var result = service.ConvertUserDateTimeToUtc(requestedDateTime, timezone);
+            var result = MiraminderService.ConvertUserDateTimeToUtc(requestedDateTime, timezone);
 
             // Assert
             Assert.That(result, Is.EqualTo(DateTime.Parse(expected, null, DateTimeStyles.RoundtripKind)));
@@ -196,11 +192,10 @@ namespace MiraBot.Miraminders.UnitTests
         public void ConvertUtcToUserTime_TimezoneIsValid_ReturnsUserTime(string utcTime, string timezone, string expectedUserTime)
         {
             // Arrange
-            var service = new MiraminderService(_remindersRepository.Object, _logger, _dateTimeProvider.Object, _usersCache.Object, _usersRepository.Object);
             var utcDateTime = DateTime.Parse(utcTime, null, DateTimeStyles.RoundtripKind);
 
             // Act
-            var result = service.ConvertUtcDateTimeToUser(utcDateTime, timezone);
+            var result = MiraminderService.ConvertUtcDateTimeToUser(utcDateTime, timezone);
 
             // Assert
             Assert.That(result.ToString("HH:mm:ss"), Is.EqualTo(expectedUserTime));
@@ -210,7 +205,7 @@ namespace MiraBot.Miraminders.UnitTests
         public async Task CancelReminder_ReminderCancelled_Successfully()
         {
             // Arrange
-            var service = new MiraminderService(_remindersRepository.Object, _logger, _dateTimeProvider.Object, _usersCache.Object, _usersRepository.Object);
+            var service = new MiraminderService(_remindersRepository.Object, _logger, _usersRepository.Object);
             var message = "test";
             var date = new DateTime(2024, 8, 15, 0, 0, 0, DateTimeKind.Utc);
             var user = new User { DiscordId = _discordId, UserId = 2, UserName = "test" };

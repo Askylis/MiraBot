@@ -1,6 +1,4 @@
-﻿using Discord;
-using Discord.Commands;
-using System.Text;
+﻿using Discord.Commands;
 
 namespace MiraBot.Permissions
 {

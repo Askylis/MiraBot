@@ -29,23 +29,45 @@ namespace MiraBot.Modules
         }
 
 
-        [SlashCommand("remind", "Set a new reminder")]
-        public async Task GetNewReminderAsync(string input)
+        [SlashCommand("remind", "Set a new reminder. Type your username or \"me\" to set for yourself.")]
+        public async Task GetNewReminderAsync(string username, string input)
         {
+            User? recipient;
             await RespondAsync("Gimme a sec to look at this...");
             if (!await _helpers.UserExistsAsync(Context.User.Id))
             {
                 await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
                 return;
             }
+
             await _helpers.UpdateUsernameIfChangedAsync(Context);
+            if (username.Equals("me", StringComparison.OrdinalIgnoreCase))
+            {
+                recipient = await _helpers.GetUserByDiscordIdAsync(Context.User.Id);
+            }
+            else
+            {
+                recipient = await _helpers.GetUserByNameAsync(username);
+                if (recipient is null)
+                {
+                    await ReplyAsync($"I couldn't find anyone with the username \"{username}\". Please make sure you input the correct username, and try again!");
+                    return;
+                }
+            }
+
             var owner = await _helpers.GetUserByNameAsync(Context.User.Username);
             if (owner.Timezone is null)
             {
                 await _helpers.SaveUserTimezoneAsync(owner);
             }
             var handler = _serviceProvider.GetRequiredService<ReminderHandler>();
-            await ReplyAsync(await handler.ParseReminderAsync(input, Context.User.Id, Context));
+            var result = handler.ParseReminderAsync(input, owner, recipient);
+            await ReplyAsync(result.Message);
+            if (result.IsSuccess)
+            {
+                await _reminderService.AddReminderAsync(result.Reminder);
+                await _cache.RefreshCacheAsync();
+            }
         }
 
 
@@ -110,7 +132,7 @@ namespace MiraBot.Modules
                 await ReplyAsync("You don't have any active reminders.");
                 return;
             }
-            await _helpers.SendLongMessageAsync(reminders.Select(r => r.Message).ToList());
+            await ModuleHelpers.SendLongMessageAsync(reminders.Select(r => r.Message).ToList(), Context);
         }
 
 
@@ -127,26 +149,21 @@ namespace MiraBot.Modules
 
             var user = await _helpers.GetUserByDiscordIdAsync(Context.User.Id);
             var reminders = _cache.GetCacheContentsByUser(user.UserId);
-            List<Reminder> matchingReminders = [];
             if (reminders.Count == 0)
             {
                 await ReplyAsync("It doesn't look like you have any active reminders!");
                 return;
             }
-            foreach (var reminder in reminders)
-            {
-                if (reminder.Message.Contains(word))
-                {
-                    matchingReminders.Add(reminder);
-                }
-            }
+
+            var matchingReminders = reminders.Where(r => r.Message.Contains(word)).ToList();
+
             if (matchingReminders.Count == 0)
             {
                 await ReplyAsync($"I couldn't find a reminder that contained \"{word}\".");
                 return;
             }
             await ReplyAsync($"I found {matchingReminders.Count} reminders!");
-            await _helpers.SendLongMessageAsync(reminders.Select(r => r.Message).ToList());
+            await ModuleHelpers.SendLongMessageAsync(reminders.Select(r => r.Message).ToList(), Context);
         }
     }
 }

@@ -22,7 +22,9 @@ namespace MiraBot.Modules
         internal const int selectMenuLimit = 24;
         internal const int maxIngredientLength = 1500;
         internal const int maxRecipeLength = 65535;
-        public GroceryAssistantModule(GroceryAssistant groceryAssistant, InteractiveService interactiveService, 
+        private static readonly char[] separator = ['\n'];
+
+        public GroceryAssistantModule(GroceryAssistant groceryAssistant, InteractiveService interactiveService,
             ModuleHelpers moduleHelpers, UserCommunications comms)
         {
             _groceryAssistant = groceryAssistant;
@@ -34,7 +36,7 @@ namespace MiraBot.Modules
         [SlashCommand("gaadd", "Add a new meal and associated ingredients.")]
         public async Task AddMealAsync()
         {
-            if (! await _helpers.UserExistsAsync(Context.User.Id))
+            if (!await _helpers.UserExistsAsync(Context.User.Id))
             {
                 await RespondAsync("It doesn't look like you've registered with me yet. Please use /register so you can start using commands!");
                 return;
@@ -116,7 +118,7 @@ namespace MiraBot.Modules
             await RespondAsync("One moment, please!");
             var meals = await _groceryAssistant.GetAllMealsAsync(Context.User.Id);
 
-            if (meals.Count < 0)
+            if (meals.Count == 0)
             {
                 await ReplyAsync("Sorry, doesn't look like you have any saved meals! You can add meals by using /gaadd.");
                 return;
@@ -172,7 +174,7 @@ namespace MiraBot.Modules
                     ingNames = await AddIngredientsAsync();
                     foreach (var ing in ingNames)
                     {
-                        selectedMeal.Ingredients.Add(new Ingredient { Name = ing, OwnerId = selectedMeal.OwnerId});
+                        selectedMeal.Ingredients.Add(new Ingredient { Name = ing, OwnerId = selectedMeal.OwnerId });
                     }
                     await _groceryAssistant.EditMealAsync(selectedMeal);
                     break;
@@ -278,19 +280,17 @@ namespace MiraBot.Modules
                 {
                     string removedMeal = selectedMeals[index].Name;
                     var newMeals = await _groceryAssistant.ReplaceMealAsync(selectedMeals, index, Context.User.Id);
-                    await ReplyAsync($"Removed **{removedMeal}** and added **{newMeals[newMeals.Count - 1].Name}**! Here's your updated meals list!\n");
+                    await ReplyAsync($"Removed **{removedMeal}** and added **{newMeals[^1].Name}**! Here's your updated meals list!\n");
                     await SendLongMessageAsync(meals: newMeals, sendIngredients: true);
                     selectedMeals = newMeals;
                 }
             }
             await ReplyAsync("Here you go!");
             await SendSelectionFileAsync(selectedMeals);
-            var dateNow = DateOnly.FromDateTime(DateTime.Now);
             var updates = new List<Task>();
             var files = new List<Task>();
             foreach (var meal in selectedMeals)
             {
-                List<string> ingredients = meal.Ingredients.Select(i => i.Name).ToList();
                 updates.Add(_groceryAssistant.EditMealAsync(meal));
                 if (meal.Recipe is not null)
                 {
@@ -329,11 +329,11 @@ namespace MiraBot.Modules
                 return;
             }
 
-            var fileContent = await _groceryAssistant.DownloadFileContentAsync(attachment.Url);
+            var fileContent = await GroceryAssistant.DownloadFileContentAsync(attachment.Url);
 
             await ReplyAsync("All right, gimme just a sec!");
 
-            var mealsText = fileContent.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            var mealsText = fileContent.Split(separator, StringSplitOptions.RemoveEmptyEntries);
             var invalidNames = await _groceryAssistant.CheckNamesFromConversion(mealsText, Context.User.Id);
 
             if (!invalidNames.IsNullOrEmpty())
@@ -427,7 +427,6 @@ namespace MiraBot.Modules
             await _helpers.UpdateUsernameIfChangedAsync(Context);
 
             Meal meal;
-            int mealId = 0;
             var all = await _groceryAssistant.GetAllMealsAsync(Context.User.Id);
             var meals = all.Where(m => !m.Recipe.IsNullOrEmpty()).ToList();
             if (meals.Count == 0)
@@ -475,7 +474,7 @@ namespace MiraBot.Modules
             }
 
             var meals = await _groceryAssistant.GetAllMealsAsync(Context.User.Id);
-            var mealsWithRecipes = meals.Where(m =>  m.Recipe != null).ToList();
+            var mealsWithRecipes = meals.Where(m => m.Recipe != null).ToList();
             if (mealsWithRecipes.Count == 0)
             {
                 await RespondAsync("You have no saved meals that have recipes attached to them.");
@@ -494,11 +493,10 @@ namespace MiraBot.Modules
             {
                 return;
             }
-            var share = mealsWithRecipes[index];
-            if (! await _comms.UserCanSendMessageAsync(recipient, owner, "recipe"))
+            if (!await _comms.UserCanSendMessageAsync(recipient, owner, "recipe"))
             {
                 await ReplyAsync("Sorry, I can't share this recipe with the intended recipient. They might not have you whitelisted, or they might have blacklisted you.");
-                return; 
+                return;
             }
             await _comms.SendRecipeAsync(recipient, owner, mealsWithRecipes[index]);
             await ReplyAsync($"Okay, sent that recipe to {recipient.UserName}!");
@@ -506,13 +504,13 @@ namespace MiraBot.Modules
 
         public async Task<bool?> UserWantsToAddRecipe(string question, ulong recipientDiscordId)
         {
-            return await _comms.UserWantsAsync(question, recipientDiscordId); 
+            return await _comms.UserWantsAsync(question, recipientDiscordId);
         }
 
 
         public async Task SendLongMessageAsync(List<string>? input = null, List<Meal>? meals = null, bool sendIngredients = false)
         {
-            var sentMessage = _groceryAssistant.SendLongMessage(input, meals, sendIngredients);
+            var sentMessage = GroceryAssistant.SendLongMessage(input, meals, sendIngredients);
 
             foreach (var message in sentMessage)
             {
@@ -546,7 +544,7 @@ namespace MiraBot.Modules
                         continue;
                     }
 
-                    return await _groceryAssistant.DownloadFileContentAsync(attachment.Url);
+                    return await GroceryAssistant.DownloadFileContentAsync(attachment.Url);
                 }
 
                 if (response.Value.Content.Length > maxRecipeLength)
@@ -567,7 +565,7 @@ namespace MiraBot.Modules
         {
             var name = Path.ChangeExtension(Path.GetRandomFileName(), ".txt");
             var path = Path.Combine(Path.GetTempPath(), name);
-            _groceryAssistant.WriteListFile(path, mealsList);
+            GroceryAssistant.WriteListFile(path, mealsList);
             await FollowupWithFileAsync(path);
         }
 
@@ -575,7 +573,7 @@ namespace MiraBot.Modules
         {
             var name = Path.ChangeExtension(Path.GetRandomFileName(), ".txt");
             var path = Path.Combine(Path.GetTempPath(), name);
-            _groceryAssistant.WriteSelectionFile(path, selectedMeals);
+            GroceryAssistant.WriteSelectionFile(path, selectedMeals);
             await FollowupWithFileAsync(path);
         }
 
@@ -583,7 +581,7 @@ namespace MiraBot.Modules
         {
             var name = Path.ChangeExtension(Path.GetRandomFileName(), ".txt");
             var path = Path.Combine(Path.GetTempPath(), name);
-            _groceryAssistant.WriteRecipeFile(path, recipe);
+            GroceryAssistant.WriteRecipeFile(path, recipe);
             await FollowupWithFileAsync(path);
         }
 

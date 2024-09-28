@@ -1,6 +1,5 @@
 ﻿using Discord;
 using Microsoft.Extensions.Logging;
-using System.Threading.Tasks;
 
 namespace MiraBot.Utility
 {

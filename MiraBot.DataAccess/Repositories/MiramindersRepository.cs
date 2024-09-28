@@ -67,7 +67,7 @@ namespace MiraBot.DataAccess.Repositories
         {
             using (var context = new MiraBotContext(_databaseOptions.ConnectionString))
             {
-                var reminders =  await context
+                var reminders = await context
                     .Reminders
                     .Where(r => !r.IsCompleted)
                     .ToListAsync()
