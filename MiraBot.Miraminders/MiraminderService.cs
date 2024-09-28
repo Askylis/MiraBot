@@ -68,7 +68,6 @@ namespace MiraBot.Miraminders
             return TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, userTimezone);
         }
 
-
         public async Task<List<string>> SendLongMessage(List<Reminder> reminders)
         {
             var response = new StringBuilder();

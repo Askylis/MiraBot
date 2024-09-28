@@ -8,25 +8,22 @@ namespace MiraBot.Miraminders
 {
     public partial class ReminderHandler
     {
-        private readonly MiraminderService _service;
+        private readonly IRemindersCache _cache;
         private readonly TimeOnly defaultTime = new(17, 0);
         private List<string> completeInput;
         private static readonly string[] keywords = ["in", "on", "at", "every", "to", "that", "and", "from", "now", "a", "an", "next"];
-        private readonly IRemindersCache _reminderCache;
         private readonly IOptions<MiraOptions> _options;
         private static readonly char[] separator = [' '];
 
         public ReminderHandler(
-            MiraminderService service,
-            IRemindersCache cache,
-            IOptions<MiraOptions> options)
+            IOptions<MiraOptions> options,
+            IRemindersCache cache)
         {
-            _service = service;
-            _reminderCache = cache;
             _options = options;
+            _cache = cache;
         }
 
-        public async Task<string> ParseReminderAsync(string input, User owner, User recipient)
+        public ReminderResult ParseReminderAsync(string input, User owner, User recipient)
         {
             // convert "my" and "me" in reminder message to "your" and "you"?
             // splits the input into a list for easier management
@@ -34,7 +31,12 @@ namespace MiraBot.Miraminders
 
             if (owner.Reminders.Count >= _options.Value.MaxReminderCount && owner.UserName != _options.Value.DevUserName)
             {
-                return $"You've reached the maximum allowed number off reminders ({_options.Value.MaxReminderCount}). Please cancel a reminder before adding another.";
+                return new ReminderResult
+                {
+                    IsSuccess = false,
+                    Message = $"You've reached the maximum allowed number off reminders ({_options.Value.MaxReminderCount}). Please cancel a reminder before adding another.",
+                    Reminder = null
+                };
             }
 
             // makes new reminder that can be modified
@@ -55,7 +57,12 @@ namespace MiraBot.Miraminders
                 DateTime? dateTime = GetUserSpecifiedDateTimeAsync(owner, reminder);
                 if (dateTime is null)
                 {
-                    return "Couldn't find a valid date or time in your reminder input, so I can't build your reminder.";
+                    return new ReminderResult
+                    {
+                        IsSuccess = false,
+                        Message = "Couldn't find a valid date or time in your reminder input, so I can't build your reminder.",
+                        Reminder = null
+                    };
                 }
                 if (reminder.DateTime == DateTime.MinValue)
                 {
@@ -64,13 +71,23 @@ namespace MiraBot.Miraminders
 
                 if (reminder.DateTime < DateTime.UtcNow)
                 {
-                    return "Can't save your reminder because it's set to go off in the past.";
+                    return new ReminderResult
+                    {
+                        IsSuccess = false,
+                        Message = "Can't save your reminder because it's set to go off in the past.",
+                        Reminder = null
+                    };
                 }
             }
 
             if (ReminderIsSpamAsync(reminder, owner))
             {
-                return "To prevent unwanted spam, I can't send reminders to another user this frequently. Reminders to another user can't be within 5 minutes of each other.";
+                return new ReminderResult
+                {
+                    IsSuccess = false,
+                    Message = "To prevent unwanted spam, I can't send reminders to another user this frequently. Reminders to another user can't be within 5 minutes of each other.",
+                    Reminder = null
+                };
             }
 
             CleanReminderMessage();
@@ -86,28 +103,32 @@ namespace MiraBot.Miraminders
 
             if (reminder.Message.Length > _options.Value.MaxMessageLength)
             {
-                return $"I couldn't save your reminder because the attached message is too long. Max length for reminder messages is {_options.Value.MaxMessageLength} characters, but your message contained {reminder.Message.Length} characters.";
+                return new ReminderResult
+                {
+                    IsSuccess = false,
+                    Message = $"I couldn't save your reminder because the attached message is too long. Max length for reminder messages is {_options.Value.MaxMessageLength} characters, but your message contained {reminder.Message.Length} characters.",
+                    Reminder = null
+                };
             }
-
-            try
-            {
-                await _service.AddReminderAsync(reminder);
-            }
-            catch
-            {
-                return "I couldn't add your reminder. It either contained typos, was missing information, or was too complex for me. Sorry!";
-            }
-
-            await _reminderCache.RefreshCacheAsync();
 
             if (reminder.IsRecurring)
             {
                 var frequency = GetRecurringReminderFrequency(reminder);
-                return $"Got it! Your reminder will go off every {frequency}. The next reminder will be sent on {DateOnly.FromDateTime(reminder.DateTime)} at {TimeOnly.FromDateTime(MiraminderService.ConvertUtcDateTimeToUser(reminder.DateTime, owner.Timezone))}.";
+                return new ReminderResult
+                {
+                    IsSuccess = true, 
+                    Message = $"Got it! Your reminder will go off every {frequency}. The next reminder will be sent on {DateOnly.FromDateTime(reminder.DateTime)} at {TimeOnly.FromDateTime(MiraminderService.ConvertUtcDateTimeToUser(reminder.DateTime, owner.Timezone))}.",
+                    Reminder = reminder
+                };
             }
             else
             {
-                return $"Got it! Your reminder will go off on {DateOnly.FromDateTime(reminder.DateTime)} at {TimeOnly.FromDateTime(MiraminderService.ConvertUtcDateTimeToUser(reminder.DateTime, owner.Timezone))}.";
+                return new ReminderResult
+                {
+                    IsSuccess = true, 
+                    Message = $"Got it! Your reminder will go off on {DateOnly.FromDateTime(reminder.DateTime)} at {TimeOnly.FromDateTime(MiraminderService.ConvertUtcDateTimeToUser(reminder.DateTime, owner.Timezone))}.",
+                    Reminder = reminder
+                };
             }
         }
 
@@ -538,6 +559,22 @@ namespace MiraBot.Miraminders
             return userDateTime.DayOfWeek;
         }
 
+        private bool ReminderIsSpamAsync(Reminder reminder, User owner)
+        {
+            var recipientReminders = _cache.GetCacheContentsByUser(reminder.RecipientId);
+
+            bool isSpam = recipientReminders.Exists(r => r.OwnerId == reminder.OwnerId && r.RecipientId != reminder.OwnerId &&
+            Math.Abs((r.DateTime - reminder.DateTime).TotalMinutes) <= 5);
+
+            return (reminder.IsRecurring
+                && reminder.OwnerId != reminder.RecipientId
+                && reminder.DateTime.AddMinutes(5) <= DateTime.UtcNow.AddMinutes(5)
+                && owner.UserName != _options.Value.DevUserName
+                || reminder.OwnerId != reminder.RecipientId
+                && owner.UserName != _options.Value.DevUserName
+                && isSpam);
+        }
+
 
         private static string RemoveCommaFromInput(string input)
         {
@@ -586,23 +623,6 @@ namespace MiraBot.Miraminders
         private static string RemoveDateSuffix(string input)
         {
             return MyRegex().Replace(input, "$1");
-        }
-
-
-        private bool ReminderIsSpamAsync(Reminder reminder, User owner)
-        {
-            var recipientReminders = _reminderCache.GetCacheContentsByUser(reminder.RecipientId);
-
-            bool isSpam = recipientReminders.Exists(r => r.OwnerId == reminder.OwnerId && r.RecipientId != reminder.OwnerId &&
-            Math.Abs((r.DateTime - reminder.DateTime).TotalMinutes) <= 5);
-
-            return (reminder.IsRecurring
-                && reminder.OwnerId != reminder.RecipientId
-                && reminder.DateTime.AddMinutes(5) <= DateTime.UtcNow.AddMinutes(5)
-                && owner.UserName != _options.Value.DevUserName
-                || reminder.OwnerId != reminder.RecipientId
-                && owner.UserName != _options.Value.DevUserName
-                && isSpam);
         }
 
 
