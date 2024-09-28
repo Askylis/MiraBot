@@ -117,11 +117,6 @@ namespace MiraBot.DataAccess.Repositories
             {
                 var sender = await context.Users.FindAsync(senderId);
                 var recipient = await context.Users.FirstOrDefaultAsync(r => r.DiscordId == recipientDiscordId);
-                var existingBlacklist = await context.Blacklists.FirstOrDefaultAsync(b => b.SenderUserId == sender.UserId && b.RecipientUserId == recipient.UserId);
-                if (existingBlacklist != null)
-                {
-                    throw new BlacklistAlreadyExistsException();
-                }
                 var blacklist = new Blacklist
                 {
                     RecipientUserId = recipient.UserId,
@@ -140,11 +135,6 @@ namespace MiraBot.DataAccess.Repositories
             {
                 var sender = await context.Users.FindAsync(senderId);
                 var recipient = await context.Users.FirstOrDefaultAsync(r => r.DiscordId == recipientDiscordId);
-                var existingWhitelist = await context.Whitelists.FirstOrDefaultAsync(w => w.SenderUserId == sender.UserId && w.RecipientUserId == recipient.UserId);
-                if (existingWhitelist != null)
-                {
-                    throw new WhitelistAlreadyExistsException();
-                }
                 var whitelist = new Whitelist
                 {
                     RecipientUserId = recipient.UserId,

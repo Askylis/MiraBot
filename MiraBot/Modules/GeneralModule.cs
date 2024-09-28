@@ -129,9 +129,15 @@ namespace MiraBot.Modules
         public async Task BlacklistAsync(string username)
         {
             var user = await _helpers.GetUserByNameAsync(username);
+            var owner = await _helpers.GetUserByDiscordIdAsync(Context.User.Id);
             if (user == null)
             {
                 await RespondAsync("Could not find a user with that username. You may have mistyped the name, or the recipient has not registered with me yet.");
+                return;
+            }
+            if (await _helpers.UserIsBlacklistedAsync(user.DiscordId, owner.UserId))
+            {
+                await RespondAsync($"{username} has already been blacklisted.");
                 return;
             }
             await _helpers.BlacklistUserAsync(Context.User.Id, user.UserId);
@@ -142,9 +148,15 @@ namespace MiraBot.Modules
         public async Task WhitelistAsync(string username)
         {
             var user = await _helpers.GetUserByNameAsync(username);
+            var owner = await _helpers.GetUserByDiscordIdAsync(Context.User.Id);
             if (user == null)
             {
                 await RespondAsync("Could not find a user with that username. You may have mistyped the name, or the recipient has not registered with me yet.");
+                return;
+            }
+            if (await _helpers.UserIsWhitelistedAsync(user.DiscordId, owner.UserId))
+            {
+                await RespondAsync($"{username} has already been whitelisted.");
                 return;
             }
             await _helpers.WhitelistUserAsync(Context.User.Id, user.UserId);
