@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 
 namespace MiraBot.Miraminders
 {
-    public class ReminderHandler
+    public partial class ReminderHandler
     {
         private readonly MiraminderService _service;
         private readonly TimeOnly defaultTime = new(17, 0);
@@ -18,6 +18,8 @@ namespace MiraBot.Miraminders
         private readonly IOptions<MiraOptions> _options;
         private readonly ModuleHelpers _helpers;
         private readonly UserCommunications _comms;
+        private static readonly char[] separator = new[] { ' ' };
+
         public ReminderHandler(
             MiraminderService service,
             IRemindersCache cache,
@@ -36,7 +38,7 @@ namespace MiraBot.Miraminders
         {
             // convert "my" and "me" in reminder message to "your" and "you"?
             // splits the input into a list for easier management
-            completeInput = input.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+            completeInput = input.Split(separator, StringSplitOptions.RemoveEmptyEntries).ToList();
 
             var owner = await _helpers.GetUserByDiscordIdAsync(ownerId);
             var recipient = await _helpers.GetUserByUserIdAsync(recipientUserId);
@@ -598,7 +600,7 @@ namespace MiraBot.Miraminders
 
         private static string RemoveDateSuffix(string input)
         {
-            return Regex.Replace(input, @"(\d+)(st|nd|rd|th)", "$1");
+            return MyRegex().Replace(input, "$1");
         }
 
 
@@ -642,5 +644,8 @@ namespace MiraBot.Miraminders
 
             return frequency;
         }
+
+        [GeneratedRegex(@"(\d+)(st|nd|rd|th)")]
+        private static partial Regex MyRegex();
     }
 }

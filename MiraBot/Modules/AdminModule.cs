@@ -1,6 +1,5 @@
 ﻿using Discord.Commands;
 using MiraBot.Common;
-using MiraBot.DataAccess;
 using MiraBot.Permissions;
 
 namespace MiraBot.Modules
@@ -39,7 +38,7 @@ namespace MiraBot.Modules
         [Command("removepermission")]
         public async Task RemovePermissionAsync(ulong discordId, int permissionId)
         {
-
+            throw new NotImplementedException();
         }
 
         [Command("ban")]
@@ -67,13 +66,13 @@ namespace MiraBot.Modules
         [Command("deletepermission")]
         public async Task DeleteExistingPermissionAsync()
         {
-
+            throw new NotImplementedException();
         }
 
         [Command("editpermission")]
         public async Task EditPermissionAsync()
         {
-
+            throw new NotImplementedException();
         }
 
         [Command("listallpermissions")]
@@ -105,7 +104,7 @@ namespace MiraBot.Modules
         [Command("bugs")]
         public async Task ListBugsAsync()
         {
-            var bugs = await _helper.GetAllBugsAsync();
+            throw new NotImplementedException();
             // write bug info to file and send it
         }
 

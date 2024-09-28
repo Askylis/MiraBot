@@ -22,6 +22,8 @@ namespace MiraBot.Modules
         internal const int selectMenuLimit = 24;
         internal const int maxIngredientLength = 1500;
         internal const int maxRecipeLength = 65535;
+        private static readonly char[] separator = new[] { '\n' };
+
         public GroceryAssistantModule(GroceryAssistant groceryAssistant, InteractiveService interactiveService, 
             ModuleHelpers moduleHelpers, UserCommunications comms)
         {
@@ -331,7 +333,7 @@ namespace MiraBot.Modules
 
             await ReplyAsync("All right, gimme just a sec!");
 
-            var mealsText = fileContent.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            var mealsText = fileContent.Split(separator, StringSplitOptions.RemoveEmptyEntries);
             var invalidNames = await _groceryAssistant.CheckNamesFromConversion(mealsText, Context.User.Id);
 
             if (!invalidNames.IsNullOrEmpty())

@@ -6,12 +6,11 @@ namespace MiraBot.Modules
     public class ReminderComponentHandler : InteractionModuleBase<SocketInteractionContext>
     {
         [ComponentInteraction("select-menu")]
-        public async Task SelectMenuHandler(string[] inputs)
+        public static async Task SelectMenuHandler(string[] inputs)
         {
             if (inputs[0] == "nevermind")
             {
                 ModuleHelpers.result = -1;
-                return;
             }
 
             else
