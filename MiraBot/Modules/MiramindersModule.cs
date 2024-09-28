@@ -73,6 +73,7 @@ namespace MiraBot.Modules
                 {
                     _logger.LogCritical(ex, "Unable to save new reminder from {username}", owner.UserName);
                     await ReplyAsync("Something went wrong adding your reminder to the database. Please try again!");
+                    return;
                 }
                 await _cache.RefreshCacheAsync();
                 _logger.LogInformation("New reminder added by {username}.", owner.UserName);
