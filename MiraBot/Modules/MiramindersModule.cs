@@ -1,5 +1,6 @@
 ﻿using Discord.Interactions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using MiraBot.Common;
 using MiraBot.DataAccess;
 using MiraBot.Miraminders;
@@ -13,6 +14,7 @@ namespace MiraBot.Modules
         private readonly MiraminderService _reminderService;
         private readonly RemindersCache _cache;
         private readonly ModuleHelpers _helpers;
+        private readonly ILogger<MiramindersModule> _logger;
         public const int selectMenuLimit = 24;
         private readonly IServiceProvider _serviceProvider;
 
@@ -20,12 +22,14 @@ namespace MiraBot.Modules
             MiraminderService reminder,
             RemindersCache cache,
             ModuleHelpers moduleHelpers,
-            IServiceProvider serviceProvider)
+            IServiceProvider serviceProvider,
+            ILogger<MiramindersModule> logger)
         {
             _reminderService = reminder;
             _cache = cache;
             _helpers = moduleHelpers;
             _serviceProvider = serviceProvider;
+            _logger = logger;
         }
 
 
@@ -56,17 +60,23 @@ namespace MiraBot.Modules
             }
 
             var owner = await _helpers.GetUserByNameAsync(Context.User.Username);
-            if (owner.Timezone is null)
-            {
-                await _helpers.SaveUserTimezoneAsync(owner);
-            }
             var handler = _serviceProvider.GetRequiredService<ReminderHandler>();
             var result = handler.ParseReminderAsync(input, owner, recipient);
             await ReplyAsync(result.Message);
             if (result.IsSuccess)
             {
-                await _reminderService.AddReminderAsync(result.Reminder);
+                try
+                {
+                    await _reminderService.AddReminderAsync(result.Reminder);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogCritical(ex, "Unable to save new reminder from {username}", owner.UserName);
+                    await ReplyAsync("Something went wrong adding your reminder to the database. Please try again!");
+                    return;
+                }
                 await _cache.RefreshCacheAsync();
+                _logger.LogInformation("New reminder added by {username}.", owner.UserName);
             }
         }
 
@@ -106,7 +116,16 @@ namespace MiraBot.Modules
                     break;
                 }
 
-                await _reminderService.CancelReminderAsync(reminders[index]);
+                try
+                {
+                    await _reminderService.CancelReminderAsync(reminders[index]);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogCritical(ex, "Something went wrong canceling a reminder from {username}", user.UserName);
+                    await ReplyAsync("Something went wrong canceling your reminder. Please try again!");
+                    return;
+                }
                 await ReplyAsync("Okay, I cancelled that reminder for you. Anything else?");
                 reminders.RemoveAt(index);
                 await _cache.RefreshCacheAsync();

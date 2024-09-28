@@ -1,6 +1,8 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.Interactions;
+using Fergun.Interactive;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MiraBot.Common;
@@ -14,16 +16,21 @@ namespace MiraBot.Modules
     {
         private readonly CommandService _commandService;
         private readonly InteractionService _interactionService;
+        private readonly InteractiveService _interactive;
         private readonly IOptions<MiraOptions> _options;
         private readonly ModuleHelpers _helpers;
+        private readonly ILogger<GeneralModule> _logger;
         private const int maxDescriptionLength = 250;
         private const int maxReproduceLength = 500;
-        public GeneralModule(InteractionService interactionService, IOptions<MiraOptions> options, CommandService service, ModuleHelpers helpers)
+        public GeneralModule(InteractionService interactionService, IOptions<MiraOptions> options, CommandService service, ModuleHelpers helpers,
+            InteractiveService interactive, ILogger<GeneralModule> logger)
         {
             _interactionService = interactionService;
             _options = options;
             _commandService = service;
             _helpers = helpers;
+            _interactive = interactive;
+            _logger = logger;
         }
 
         [SlashCommand("help", "Displays all available Mira functionality and provides information on how to use it all.")]
@@ -35,7 +42,6 @@ namespace MiraBot.Modules
                 return;
             }
             await _helpers.UpdateUsernameIfChangedAsync(Context);
-            // maybe update this later to provide more in-depth information about specific commands?
             var builder = new EmbedBuilder()
                 .WithTitle("Available Commands")
                 .WithColor(Color.Blue);
@@ -69,9 +75,19 @@ namespace MiraBot.Modules
                 DiscordId = Context.User.Id,
                 UserName = Context.User.Username,
             };
-            await _helpers.AddNewUserAsync(newUser);
+            try
+            {
+                await _helpers.AddNewUserAsync(newUser);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogCritical(ex, "Something went wrong adding new user {username}", newUser.UserName);
+                await ReplyAsync("Something went wrong while registering you. Please try again!");
+                return;
+            }
+            _logger.LogInformation("Added new user: {username}", newUser.UserName);
             var user = await _helpers.GetUserByDiscordIdAsync(Context.User.Id);
-            await _helpers.SaveUserTimezoneAsync(user);
+            await SaveUserTimezoneAsync(user);
             await ReplyAsync("Got all the information I need! You can use `/help` to view all available commands.");
         }
 
@@ -113,8 +129,17 @@ namespace MiraBot.Modules
                 DateTime = DateTime.Now
             };
 
-            await _helpers.SaveBugAsync(report, Context.User.Id);
+            try
+            {
+                await _helpers.SaveBugAsync(report, Context.User.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogCritical(ex, "Something went wrong adding a new bug from {username}", user.UserName);
+                await ReplyAsync("Something went wrong while submitting that bug report. Please try again!");
+            }
             var bug = await _helpers.GetNewestBugAsync();
+            _logger.LogWarning("New {severity} bug report with bug ID {bugId} from {username}. Bug description: {description}", bug.Severity, bug.Id, user.UserName, bug.Description);
             await ReplyAsync("This bug report has been sent to the developer. Thank you!");
             var dm = await Context.Client.GetUserAsync(_options.Value.DevId);
             await dm.SendMessageAsync($"New **{severity} severity** bug report from **{user.UserName}**!\n**Bug description:**\n\n\"{description}\"\n\n**Steps to reproduce:**\n\n\"{reproduce}\".");
@@ -125,12 +150,28 @@ namespace MiraBot.Modules
         public async Task BlacklistAsync(string username)
         {
             var user = await _helpers.GetUserByNameAsync(username);
+            var owner = await _helpers.GetUserByDiscordIdAsync(Context.User.Id);
             if (user == null)
             {
                 await RespondAsync("Could not find a user with that username. You may have mistyped the name, or the recipient has not registered with me yet.");
                 return;
             }
-            await _helpers.BlacklistUserAsync(Context.User.Id, user.UserId);
+            if (await _helpers.UserIsBlacklistedAsync(user.DiscordId, owner.UserId))
+            {
+                await RespondAsync($"{username} has already been blacklisted.");
+                return;
+            }
+            try
+            {
+                await _helpers.BlacklistUserAsync(Context.User.Id, user.UserId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogCritical(ex, "Something went wrong with {ownerUsername} blacklisting {username}.", user.UserName, owner.UserName);
+                await ReplyAsync("Something went wrong while trying to blacklist this user. Please try again!");
+                return;
+            }
+            _logger.LogInformation("{username} has blacklisted {username}.", owner.UserName, user.UserName);
             await RespondAsync($"{user.UserName} has been blacklisted. They will not be able to send you anything through me anymore.");
         }
 
@@ -138,13 +179,128 @@ namespace MiraBot.Modules
         public async Task WhitelistAsync(string username)
         {
             var user = await _helpers.GetUserByNameAsync(username);
+            var owner = await _helpers.GetUserByDiscordIdAsync(Context.User.Id);
             if (user == null)
             {
                 await RespondAsync("Could not find a user with that username. You may have mistyped the name, or the recipient has not registered with me yet.");
                 return;
             }
-            await _helpers.WhitelistUserAsync(Context.User.Id, user.UserId);
+            if (await _helpers.UserIsWhitelistedAsync(user.DiscordId, owner.UserId))
+            {
+                await RespondAsync($"{username} has already been whitelisted.");
+                return;
+            }
+            try
+            {
+                await _helpers.WhitelistUserAsync(Context.User.Id, user.UserId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogCritical(ex, "Something went wrong with {username} whitelisting {username}.", user.UserName, owner.UserName);
+                await ReplyAsync("Something went wrong while trying to whitelist this user. Please try again!");
+                return;
+            }
+            _logger.LogInformation("{username} has whitelisted {username}.", owner.UserName, user.UserName);
             await RespondAsync($"{user.UserName} has been whitelisted. They will now be able to send you things through me.");
+        }
+
+        public async Task SaveUserTimezoneAsync(User owner)
+        {
+            await SendTimezoneFileAsync();
+
+            while (true)
+            {
+                await ReplyAsync("Copy your timezone exactly how it's listed in this file, and send it to me so I can register your timezone!");
+
+                var input = await _interactive.NextMessageAsync(
+                    x => x.Author.Id == Context.User.Id && x.Channel.Id == Context.Channel.Id,
+                    timeout: TimeSpan.FromMinutes(2));
+
+                if (!input.IsSuccess)
+                {
+                    continue;
+                }
+
+                var timezone = input.Value.Content.Trim();
+
+                if (!IsValidTimezone(timezone))
+                {
+                    await ReplyAsync("The timezone you entered isn't valid! Make sure to copy your timezone exactly as it's listed in the file I sent.");
+                    continue;
+                }
+
+                if (owner.UsesAmericanDateFormat is null)
+                {
+                    await ReplyAsync("How would you write out the date \"August 30th\"?");
+                    var options = new List<string> { "8/30", "30/8" };
+                    await _helpers.GenerateSelectMenuAsync(options,
+                        "How would you write out the date \"August 30th\"?",
+                        "select-menu",
+                        "Select this option",
+                        Context
+                        );
+                    var selection = ModuleHelpers.result;
+                    ModuleHelpers.result = -1;
+                    bool isAmerican = (selection == 0);
+
+                    await AddDateFormatToUserAsync(owner.DiscordId, isAmerican);
+                }
+
+                await AddTimezoneToUserAsync(Context.User.Id, timezone);
+                break;
+            }
+        }
+
+        public static bool IsValidTimezone(string timezoneId)
+        {
+            return TimeZoneInfo
+                .GetSystemTimeZones()
+                .Any(t => t.Id.Equals(timezoneId, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public async Task SendTimezoneFileAsync()
+        {
+            string fileName;
+            try
+            {
+                fileName = CreateTimezoneFile();
+            }
+            catch (Exception ex)
+            {
+                await ReplyAsync("I was unable to create the timezone file. Please seek assistance from the developer.");
+                return;
+            }
+
+            await FollowupWithFileAsync(fileName);
+        }
+
+        public async Task AddTimezoneToUserAsync(ulong discordId, string timezoneId)
+        {
+            var user = await _helpers.GetUserByDiscordIdAsync(discordId)
+                .ConfigureAwait(false);
+
+            if (user is not null)
+            {
+                user.Timezone = timezoneId;
+                await _helpers.ModifyUserAsync(user);
+            }
+        }
+
+        public async Task AddDateFormatToUserAsync(ulong discordId, bool isAmerican)
+        {
+            var user = await _helpers.GetUserByDiscordIdAsync(discordId)
+                .ConfigureAwait(false);
+
+            user.UsesAmericanDateFormat = isAmerican;
+            await _helpers.ModifyUserAsync(user);
+        }
+
+        public static string CreateTimezoneFile()
+        {
+            var fileName = Path.ChangeExtension(Path.GetRandomFileName(), ".txt");
+            var timeZones = TimeZoneInfo.GetSystemTimeZones();
+            File.WriteAllLines(fileName, timeZones.Select(t => t.Id).ToArray());
+            return fileName;
         }
     }
 }
