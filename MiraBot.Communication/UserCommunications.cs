@@ -119,7 +119,7 @@ namespace MiraBot.Communication
             return false;
         }
 
-        public async Task AddButtonsAsync(RestDMChannel dm, int mealId, string text)
+        public static async Task AddButtonsAsync(RestDMChannel dm, int mealId, string text)
         {
             var builder = new ComponentBuilder()
                 .WithButton("Yes", $"yes_{mealId}")
@@ -136,7 +136,7 @@ namespace MiraBot.Communication
             await dm.SendFileAsync(path);
         }
 
-        public void WriteRecipeFile(string filePath, string recipe)
+        public static void WriteRecipeFile(string filePath, string recipe)
         {
             using (StreamWriter writer = new(filePath))
             {

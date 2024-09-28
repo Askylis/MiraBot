@@ -1,7 +1,5 @@
-﻿using Discord.Interactions;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using MiraBot.Common;
-using MiraBot.Communication;
 using MiraBot.DataAccess;
 using System.Globalization;
 using System.Text.RegularExpressions;
@@ -16,32 +14,23 @@ namespace MiraBot.Miraminders
         private static readonly string[] keywords = ["in", "on", "at", "every", "to", "that", "and", "from", "now", "a", "an", "next"];
         private readonly IRemindersCache _reminderCache;
         private readonly IOptions<MiraOptions> _options;
-        private readonly ModuleHelpers _helpers;
-        private readonly UserCommunications _comms;
-        private static readonly char[] separator = new[] { ' ' };
+        private static readonly char[] separator = [' '];
 
         public ReminderHandler(
             MiraminderService service,
             IRemindersCache cache,
-            IOptions<MiraOptions> options,
-            ModuleHelpers helpers,
-            UserCommunications comms)
+            IOptions<MiraOptions> options)
         {
             _service = service;
             _reminderCache = cache;
             _options = options;
-            _helpers = helpers;
-            _comms = comms;
         }
 
-        public async Task<string> ParseReminderAsync(string input, ulong ownerId, int recipientUserId)
+        public async Task<string> ParseReminderAsync(string input, User owner, User recipient)
         {
             // convert "my" and "me" in reminder message to "your" and "you"?
             // splits the input into a list for easier management
             completeInput = input.Split(separator, StringSplitOptions.RemoveEmptyEntries).ToList();
-
-            var owner = await _helpers.GetUserByDiscordIdAsync(ownerId);
-            var recipient = await _helpers.GetUserByUserIdAsync(recipientUserId);
 
             if (owner.Reminders.Count >= _options.Value.MaxReminderCount && owner.UserName != _options.Value.DevUserName)
             {
@@ -52,13 +41,9 @@ namespace MiraBot.Miraminders
             var reminder = new Reminder
             {
                 OwnerId = owner.UserId,
-                RecipientId = recipientUserId
+                RecipientId = recipient.UserId
             };
 
-            if (! await _comms.UserCanSendMessageAsync(recipient, owner, "reminder"))
-            {
-                return "I'm unable to send this reminder to the recipient. This could either be because they haven't whitelisted you yet, or because they've blacklisted you.";
-            }
 
             // search for keyword "every" to determine whether or not this reminder is recurring. If it's recurring, figure out
             // how often the reminder is supposed to go off. 
@@ -122,7 +107,7 @@ namespace MiraBot.Miraminders
             }
             else
             {
-                return $"Got it, your reminder has been saved! It will go off on {DateOnly.FromDateTime(reminder.DateTime)} at {TimeOnly.FromDateTime(MiraminderService.ConvertUtcDateTimeToUser(reminder.DateTime, owner.Timezone))}.";
+                return $"Got it! Your reminder will go off on {DateOnly.FromDateTime(reminder.DateTime)} at {TimeOnly.FromDateTime(MiraminderService.ConvertUtcDateTimeToUser(reminder.DateTime, owner.Timezone))}.";
             }
         }
 
@@ -137,7 +122,7 @@ namespace MiraBot.Miraminders
             // after attempting to get a date, regardless if the date is null or not, try to get a time.
             DateTime? dateTime = GetSpecifiedTimeAsync(owner);
 
-            TimeOnly? time = null;
+            TimeOnly? time;
             // need to call GetDayOfWeek() somewhere in here. 
             if (dateTime is not null)
             {

@@ -11,7 +11,7 @@ namespace MiraBot.Common
         private readonly InteractiveService _interactive;
         private readonly IUsersRepository _usersRepository;
         private readonly BugRepository _bugRepository;
-        public static int result = -1;
+        internal static int result = -1;
         internal const int selectMenuLimit = 24;
         public ModuleHelpers(InteractiveService interactiveService, IUsersRepository usersRepository, BugRepository bugRepository)
         {
